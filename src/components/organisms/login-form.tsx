@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { LoginSchema, LoginType } from "@/lib/schemas/login.schema";
 import { cn } from "@/lib/utils";
-import { loginAction } from "@/services/server/auth.actions";
+import { loginMutationOptions } from "@/services/queries/auth.queries";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { motion } from "motion/react";
@@ -23,20 +23,17 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Spinner } from "../ui/spinner";
 
-// ✅ helper: applique l'erreur API dans react-hook-form
 function applyApiErrorsToForm(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   apiError: { message?: string; errors?: any },
   setError: ReturnType<typeof useForm<LoginType>>["setError"],
 ) {
-  // message global
   if (apiError?.message) {
     setError("root", { type: "server", message: apiError.message });
   }
 
   const e = apiError?.errors;
 
-  // format 1: { username: "...", password: "..." }
   if (e && typeof e === "object" && !Array.isArray(e)) {
     if (typeof e.username === "string") {
       setError("username", { type: "server", message: e.username });
@@ -46,7 +43,6 @@ function applyApiErrorsToForm(
     }
   }
 
-  // format 2: [{ field: "username", message: "..." }, ...]
   if (Array.isArray(e)) {
     for (const item of e) {
       const field = item?.field;
@@ -74,20 +70,16 @@ export function LoginForm({ className }: React.ComponentProps<"div">) {
   });
 
   const login = useMutation({
-    mutationFn: loginAction,
+    ...loginMutationOptions(),
     onSuccess: (result) => {
       console.log("Root", result);
-
       if (!result?.success) {
-        // En cas d'erreur, ne pas vider les champs
         applyApiErrorsToForm(
           result?.error ?? { message: "Erreur de connexion" },
           form.setError,
         );
         return;
       }
-
-      // Seulement en cas de succès, vider les champs et rediriger
       form.reset();
       router.push("/dashboard");
     },

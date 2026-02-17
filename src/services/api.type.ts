@@ -1,10 +1,13 @@
 export interface ApiResponse<T> {
   data: T;
-  status: boolean | number;
+  status: number | boolean;
   success?: boolean;
   message?: string;
+  totalItems?: number;
+  totalPages?: number;
+  page?: number;
+  limit?: number;
 }
-
 export interface LoginCredentials {
   username: string;
   password: string;

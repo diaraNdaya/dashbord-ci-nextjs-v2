@@ -1,119 +1,174 @@
 export const BASE_URL = process.env.API_BASE_URL;
 export const paymentApiEndpoints = process.env.PAYMENT_API;
+export const BASE_URL_DELIVERY = process.env.NEXT_PUBLIC_API_BASE_URL_DELIVERY;
+
 export const endpoints = {
-  USER: {
-    OTP: {
-      verify: `${BASE_URL}/otp/verify`, // Ok
-      create: `${BASE_URL}/otp/create`, // ok
-      reload: `${BASE_URL}/otp/resend`, // ok
-    },
-    LOGIN: `${BASE_URL}/auth/login`,
-    REGISTER: `${BASE_URL}/users?lang=fr`, // ok
-    PROFILE: `${BASE_URL}/auth/profile`, // ok
-    UPDATE: (id: string) => `${BASE_URL}/users/${id}`, // ok
-    CHANGE_ROLE: `${BASE_URL}/users/passage`, // ok
-    ADDRESS: {
-      create: `${BASE_URL}/address`, // probleme de cors
-      update: (id: string) => `${BASE_URL}/address/${id}`, // probleme de cors
-      delete: (id: string) => `${BASE_URL}/address/${id}`, // probleme de cors
-      getAddress: `${BASE_URL}/address/customer`,
-    },
-    RESET: {
-      updatePassword: `${BASE_URL}/users/reset-password`, // ok
-      forgotPassword: `${BASE_URL}/forgot`, // ok
-      verifyOTP: `${BASE_URL}/forgot/verify`, // ok
-      index: (id: string) => `${BASE_URL}/forgot/${id}`, // ok
-    },
+  AUTH: {
+    login: () => `${BASE_URL}/auth/login`,
+    logout: () => `${BASE_URL}/auth/logout`,
+    me: () => `${BASE_URL}/auth/profile`,
   },
-  SUBCATEGORIES: {
-    subcategoryByCategory: (categoryId: string, page?: number, limit?: number) =>
-      `${BASE_URL}/categories/sub-category/all/${categoryId}?page=${page}&limit=${limit}`, // ok
-    allSubcategory: (page?: number, limit?: number) =>
-      `${BASE_URL}/categories/sub-category/all?page=${page}&limit=${limit}`, // ok
+  CUSTOMER: {
+    allCustomer: (
+      page?: number,
+      limit?: number,
+      city?: string,
+      name?: string,
+      address?: string,
+    ) => {
+      const params = new URLSearchParams();
+      if (page !== undefined) params.append("page", page.toString());
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (city && city.trim() !== "") params.append("city", city.trim());
+      if (name && name.trim() !== "") params.append("name", name.trim());
+      if (address && address.trim() !== "")
+        params.append("address", address.trim());
+      return `${BASE_URL}/customers/all?${params.toString()}`;
+    },
+    allCustomerBloqued: (page?: number, limit?: number) =>
+      `${BASE_URL}/admins/users-blocked?page=${page}&limit=${limit}`,
+    getOne: (id: string) => `${BASE_URL}/customers/${id}`,
+    deleteOne: (id: string) => `${BASE_URL}/customers/${id}`,
+    blockedUser: (id: string) => `${BASE_URL}/users/block/${id}`,
   },
-  CATEGORIES: {
-    subcategoryByCategory: (categoryId: string, page?: number, limit?: number) =>
-      `${BASE_URL}/categories/sub-category/all/${categoryId}?page=${page}&limit=${limit}`,
-    allCategory: (page?: number, limit?: number) =>
-      `${BASE_URL}/categories/all?page=${page}&limit=${limit}`, // ok
-    topCategory : () =>`${BASE_URL}/categories/top`,
-    trendingCategory : () =>`${BASE_URL}/categories/trending`
+  SELLER: {
+    allSeller: (
+      page?: number,
+      limit?: number,
+      business_address?: string,
+      store_name?: string,
+    ) => {
+      const params = new URLSearchParams();
+      if (page !== undefined) params.append("page", page.toString());
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (business_address && business_address.trim() !== "")
+        params.append("business_address", business_address.trim());
+      if (store_name && store_name.trim() !== "")
+        params.append("store_name", store_name.trim());
+
+      return `${BASE_URL}/sellers?${params.toString()}`;
+    },
+    topSeller: () => `${BASE_URL}/sellers/topSeller/`,
+    getOneSeller: (id: string) => `${BASE_URL}/sellers/${id}`,
+    sellCount: () => `${BASE_URL}/ssellers/admin`,
+  },
+  PRODUCT: {
+    allProduct: (page?: number, limit?: number) =>
+      `${BASE_URL}/products/all?page=${page}&limit=${limit}`,
+    getOneProduct: (id: string) => `${BASE_URL}/products/${id}`,
+    deleteOneProduct: (id: string) => `${BASE_URL}/products/${id}`,
+    getProductBySeller: (id: string, page: number, limit: number) =>
+      `${BASE_URL}/products/${id}/seller?page=${page}&limit=${limit}`,
   },
   ORDERS: {
-    create: `${BASE_URL}/orders`,
-    update: (id: string) => `${BASE_URL}/orders/${id}`,
-    getOrder: (id: string) => `${BASE_URL}/orders/${id}`,
-    allOrders: (page?: number, limit?: number, statut?: string): string => {
-      let url = `${BASE_URL}/orders/customer?page=${page}&limit=${limit}`;
+    allOrders: (page?: number, limit?: number, statut?: string) => {
+      let url = `${BASE_URL}/orders?page=${page}&limit=${limit}`;
       if (statut && statut !== "all") {
         url += `&statut=${statut}`;
       }
       return url;
     },
-    order: (orderId: string) => `${BASE_URL}/orders/${orderId}`,
+
+    getOneOrder: (id: string) => `${BASE_URL}/orders/${id}`,
+    deleteOneOrder: (id: string) => `${BASE_URL}/orders/${id}`,
   },
-  PRODUCTS: {
-    allProduct: (page?: number, limit?: number) =>
-      `${BASE_URL}/products/all?limit=${limit}&page=${page}`, // ok
-    productById: (id: string) => `${BASE_URL}/products/${id}`, // ok
-    productsByCategory: (categoryId: string, page?: number, limit?: number) =>
-      `${BASE_URL}/categories/all/${categoryId}/products?page=${page}&limit=${limit}`, // ok
-    productsBySubCategory: (
-      subCategoryId: string,
+  TOPCOUNT: {
+    product: (page?: number, limit?: number) =>
+      `${BASE_URL}/products?page=${page}&limit=${limit}`,
+    seller: () => `${BASE_URL}/sellers/topSeller/`,
+    topCategory: () => `${BASE_URL}/categories/top`,
+  },
+  DASHBOARD: {
+    getDashboardData: () => `${BASE_URL}/admins/statistics`,
+    getMetricsData: () => `${BASE_URL}/admins/metrics`,
+    getSalesData: (period: string, date: string) =>
+      `${BASE_URL}/admins/sales-data?period=${period}&date=${date}`,
+    getProductReport: (year: number, month: number) =>
+      `${BASE_URL}/admins/top-products?year=${year}&month=${month}`,
+    getTopProductsByPeriod: (period: string, date: string) =>
+      `${BASE_URL}/admins/top-products?period=${period}&date=${date}`,
+    getUserData: (month: number, year: number) =>
+      `${BASE_URL}/admins/stats-users?month=${month}&year=${year}`,
+    getCategoriesData: () => `${BASE_URL}/admins/categories`,
+    getTopSeller: (year: number, month: number) =>
+      `${BASE_URL}/admins/top-sellers?year=${year}&month=${month}`,
+    getTopSellerByPeriod: (period: string, date: string) =>
+      `${BASE_URL}/admins/top-sellers?period=${period}&date=${date}`,
+    getTopCategory: (year: number, month: number) =>
+      `${BASE_URL}/admins/categories-sales?year=${year}&month=${month}`,
+    getCommissionsSellers: (page: number, limit: number) =>
+      `${BASE_URL}/admins/commission-sellers?limit=${limit}&page=${page}`,
+    getCommissionGlobale: () => `${BASE_URL}/admins/commission-globale`,
+    getCountCommissionSellers: () => `${BASE_URL}/admins/commission-globale`,
+    createCommission: () => `${BASE_URL}/admins/commission`,
+    updateCommission: () => `${BASE_URL}/admins/commission`,
+    deleteCommission: (id: string) => `${BASE_URL}/admins/commission/${id}`,
+    configCommission: () => `${BASE_URL}/admins/commission`,
+    getCommissionEvolution: (period: string, date: string) =>
+      `${BASE_URL}/admins/commission-evolution?period=${period}&date=${date}`,
+    getAllDocument: (page: number, limit: number) =>
+      `${BASE_URL}/admins/documents-verified?page=${page}&limit=${limit}`,
+    sellersVerified: (page: number, limit: number, statut: string) =>
+      `${BASE_URL}/admins/sellers-verified?limit=${limit}&page=${page}&statut=${statut}`,
+    customersVerified: (page: number, limit: number, statut: string) =>
+      `${BASE_URL}/admins/customers-verified?limit=${limit}&page=${page}&statut=${statut}`,
+    validateDocument: (id: string) =>
+      `${BASE_URL}/admins/validate-document/${id}`,
+    getCommissionsSellersById: (id: string, page: number, limit: number) =>
+      `${BASE_URL}/admins/commission-histories/${id}?page=${page}&limit=${limit}`,
+    getUsersDeleted: (page: number, limit: number) =>
+      `${BASE_URL}/admins/users-blocked?page=${page}&limit=${limit}`,
+  },
+  CATEGORY: {
+    allCategory: (page?: number, limit?: number) =>
+      `${BASE_URL}/categories/all?page=${page}&limit=${limit}`,
+    createCategory: () => `${BASE_URL}/categories`,
+    deleteCategorie: (id: string) => `${BASE_URL}/categories/${id}`,
+    deleteSubcategory: (id: string) =>
+      `${BASE_URL}/categories/sub-category/${id}`,
+    updateCategory: (id: string) => `${BASE_URL}/categories/${id}`,
+    updateSubCategory: (id: string) =>
+      `${BASE_URL}/categories/sub-category/${id}`,
+  },
+  SUBCATEGORY: {
+    allSubcategory: (page?: number, limit?: number) =>
+      `${BASE_URL}/categories/sub-category/all?page=${page}&limit=${limit}`,
+    createSubcategory: () => `${BASE_URL}/categories/sub-category`,
+  },
+  DATARESSORCES: {
+    uploadFile: () => `${BASE_URL}/upload`,
+  },
+  VERSING: {
+    create: `${BASE_URL}/version`,
+    getAll: `${BASE_URL}/version`,
+    last: `${BASE_URL}/version/one`,
+    getBYId: (id: string) => `${BASE_URL}/version/${id}`,
+  },
+  PAYMENT: {
+    allPayment: (
+      period: string,
+      date: string,
       page?: number,
-      limit?: number
+      limit?: number,
+      search?: string,
     ) =>
-      `${BASE_URL}/categories/sub-category/${subCategoryId}/products?page=${page}&limit=${limit}`, // ok
-    topProducts: (page?: number, limit?: number) =>
-      `${BASE_URL}/products/top?page=${page}&limit=${limit}`, // ok
-    filterProducts: (filters: string, page?: number, limit?: number) =>
-      `${BASE_URL}/products/filter-web?${filters}&page=${page}&limit=${limit}`, // ok
-    ProductsByOrder: (page: number, limit: number) =>
-      `${BASE_URL}/products/top-order?limit=${limit}&page=${page}`, // ok
-    discountProducts: (page: number, limit: number) =>
-      `${BASE_URL}/products/top-discounts?limit=${limit}&page=${page}`, // ok
+      `${BASE_URL}/admins/transactions?period=${period}&date=${date}&page=${page}&limit=${limit}&search=${search}`,
   },
-  REVIEWS: {
-    create: `${BASE_URL}/reviews`, // ok
-    byProduct: (productId: string, page: number, limit: number) =>
-      `${BASE_URL}/reviews/${productId}/products?limit=${limit}&page=${page}`, // ok
-    byId: (ReviewId: string) => `${BASE_URL}/reviews/${ReviewId}`,
+  DELIVERY: {
+    createUserDelivery: `${BASE_URL_DELIVERY}/users`,
+    getAllDeliveries: (page: number, limit: number) =>
+      `${BASE_URL_DELIVERY}/users?page=${page}&limit=${limit}`,
+    deliveryAvailable: () => `${BASE_URL_DELIVERY}/delivery/admin/all`,
+    orderDelivery: (id: string) => `${BASE_URL_DELIVERY}/delivery/admin/${id}`,
   },
-  WISHLIST: {
-    allWishlist: `${BASE_URL}/wishlists/customer`,
-    addToWishlist: `${BASE_URL}/wishlists`,
-    removeFromWishlist: (productId: string) =>
-      `${BASE_URL}/wishlists/${productId}`,
-    deleteWishlist: (wishlistId: string) =>
-      `${BASE_URL}/wishlists/${wishlistId}`,
-    getWishlist: (wishlistId: string) => `${BASE_URL}/wishlists/${wishlistId}`,
+  NEWLETTER: {
+    getAll: (page: number, limit: number) => `${BASE_URL}/newsletter/community`,
   },
-  CARTS: {
-    allCarts: (customerId: string) =>
-      `${BASE_URL}/carts/customer/${customerId}`,
-    deleteCart: (cartId: string) => `${BASE_URL}/carts/${cartId}`,
-    updateCart: (cartId: string) => `${BASE_URL}/carts/${cartId}`,
-    createCart: `${BASE_URL}/carts`,
-  },
-  PAYMENTS: {
-    card: `${BASE_URL}/payments/stripeWeb-payment`,
-    getPayment: `${BASE_URL}/payments/card`,
-    deletePayment: `${BASE_URL}/payments/card`,
-    verify: (orders_id: string) =>
-      `${BASE_URL}/payments/verify-payment/${orders_id}`,
-    verifyMobilePayment: (orders_id: string) =>
-      `${BASE_URL}/verify-payment/${orders_id}`,
-    mobileMoney: `${BASE_URL}/payments/init-payment`,
-    // mobileMoney: `${paymentApiEndpoints}/payments`,
-  },
-  SHIPPING: {
-    getShipping: `${BASE_URL}/shipping-methods`,
-  },
-  NOTIFICATIONS: {
-    getNotifications: (userId: string, page: number, limit: number) =>
-      `${BASE_URL}/notifications/user/${userId}?page=${page}&limit=${limit}`,
-  },
-  NEWSLETTER: {
-    subscribe: `${BASE_URL}/newsletter`,
+  BANNER: {
+    getAll: (page: number, limit: number) =>
+      `${BASE_URL}/medias/banner?page=${page}&limit=${limit}`,
+    createBanner: () => `${BASE_URL}/medias/banner`,
+    updateBanner: (id: string) => `${BASE_URL}/medias/banner/${id}`,
+    deleteBanner: (id: string) => `${BASE_URL}/medias/banner/${id}`,
   },
 };

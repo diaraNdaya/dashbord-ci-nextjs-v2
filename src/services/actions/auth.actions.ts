@@ -1,105 +1,56 @@
 "use server";
-import { LoginResponse, OptResponse, OtpCredentials, ProfileResponse, VerifyOtpCredentials, VerifyOtpResponse, changeRoleCredentials } from "@/lib/types/user.type";
-import { serverRequest } from "../axios-server";
+import { LoginResponse, Profile } from "@/lib/types/user.type";
+import { serverRequest } from "@/services/server/axios-server.server";
+import { safeAction } from "@/services/server/safe-action.server";
+import { cookies } from "next/headers";
+import { LoginCredentials } from "../api.type";
 import { endpoints } from "../endpoints";
 
-export async function LoginAction(credentials: {
-  username: string;
-  password: string;
-}): Promise<LoginResponse> {
-  try {
-    const response = await serverRequest<LoginResponse>(endpoints.USER.LOGIN, {
+type MeData = { user: Profile };
+
+export async function loginAction(input: LoginCredentials) {
+  return safeAction<LoginResponse>(async () => {
+    const res = await serverRequest<LoginResponse>(`${endpoints.AUTH.login}`, {
       method: "POST",
-      body: JSON.stringify(credentials),
+      body: JSON.stringify(input),
     });
-    return response;
-    
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return error;
-  }
+    const cookiesStore = await cookies();
+
+    if (res.data.user.role.name !== "ADMIN") {
+      throw new Error(
+        "Accès refusé : Vous n'êtes pas autorisé à accéder à cette application. Seuls les administrateurs peuvent se connecter.",
+      );
+    }
+    const token = res.data.accessToken;
+    if (token) {
+      cookiesStore.set("accessToken", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+      });
+    }
+    return res;
+  });
 }
 
-export async function SendOtp(
-  credentials: OtpCredentials
-): Promise<OptResponse> {
-  try {
-    const response = await serverRequest<OptResponse>(endpoints.USER.REGISTER, {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    });
-    return response;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return error;
-  }
+export async function meAction() {
+  return safeAction<MeData>(() =>
+    serverRequest<MeData>(`${endpoints.AUTH.me}`, {
+      method: "GET",
+    }),
+  );
 }
 
-export async function VerifyOtp(
-  credentials: VerifyOtpCredentials
-): Promise<VerifyOtpResponse> {
-  try {
-    const response = await serverRequest<VerifyOtpResponse>(
-      endpoints.USER.OTP.verify,
-      {
-        method: "POST",
-        body: JSON.stringify(credentials),
-      }
-    );
-    return response;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return error;
-  }
-}
-
-export async function ResendOtp(credentials: {
-  keys: string;
-}): Promise<OptResponse> {
-  try {
-    const response = await serverRequest<OptResponse>(
-      endpoints.USER.OTP.reload,
-      {
-        method: "POST",
-        body: JSON.stringify(credentials),
-      }
-    );
-    return response;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return error;
-  }
-}
-
-export async function ProfileAction(): Promise<ProfileResponse> {
-  try {
-    const response = await serverRequest<ProfileResponse>(
-      endpoints.USER.PROFILE,
-      {
-        method: "GET",
-      }
-    );
-    return response;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return error;
-  }
-}
-
-export async function ChangeRole(
-  credentials: changeRoleCredentials
-): Promise<LoginResponse> {
-  try {
-    const response = await serverRequest<LoginResponse>(
-      endpoints.USER.CHANGE_ROLE,
-      {
-        method: "POST",
-        body: JSON.stringify(credentials),
-      }
-    );
-    return response;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return error;
-  }
+export async function logoutAction() {
+  return safeAction(async () => {
+    const cookiesStore = await cookies();
+    cookiesStore.delete("accessToken");
+    return {
+      data: { ok: true },
+      status: 200,
+      success: true,
+      message: "Déconnexion réussie",
+    };
+  });
 }

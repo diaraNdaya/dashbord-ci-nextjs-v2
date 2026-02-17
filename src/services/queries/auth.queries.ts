@@ -1,4 +1,8 @@
-import { logoutAction, meAction } from "@/services/server/auth.actions";
+import {
+  loginAction,
+  logoutAction,
+  meAction,
+} from "@/services/actions/auth.actions";
 
 export const meQueryOptions = () => ({
   queryKey: ["me"] as const,
@@ -15,4 +19,8 @@ export const meQueryOptions = () => ({
 
 export const logoutMutationOptions = () => ({
   mutationFn: logoutAction,
+});
+
+export const loginMutationOptions = () => ({
+  mutationFn: loginAction,
 });

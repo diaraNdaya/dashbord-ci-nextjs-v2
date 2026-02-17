@@ -44,3 +44,21 @@ export interface SellersApiResponse {
   totalPages: number;
   page: number;
 }
+
+export type SalesData = {
+  date: string;
+  ventes: number;
+  commandes: number;
+};
+
+export type TopProductsData = {
+  produit: string;
+  ventes: number;
+  revenus: number;
+};
+
+export type UsersData = {
+  day: string;
+  nouveaux: number;
+  total: number;
+};
