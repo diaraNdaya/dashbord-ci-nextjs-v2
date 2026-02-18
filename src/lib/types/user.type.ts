@@ -1,4 +1,3 @@
-
 import { ApiResponse } from "@/services/api.type";
 import { Customer } from "./index";
 import { Seller } from "./products.types";
@@ -123,4 +122,31 @@ export interface updateProfileCredentials {
 export interface ResetPasswordCredentials {
   new_password: string;
   confirmPassword: string;
+}
+// Types pour les paramètres de recherche
+export interface CustomerSearchParams {
+  name?: string;
+  city?: string;
+}
+
+export interface SellerSearchParams {
+  store_name?: string;
+  business_address?: string;
+}
+
+// Types pour les réponses des documents et validations
+export interface DocumentsResponse {
+  success: boolean;
+  message: string;
+  data: unknown[];
+  totalItems: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+export interface ValidationResponse {
+  success: boolean;
+  message: string;
+  data: unknown;
 }

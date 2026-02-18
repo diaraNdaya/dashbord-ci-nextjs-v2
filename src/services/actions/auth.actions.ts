@@ -10,10 +10,13 @@ type MeData = { user: Profile };
 
 export async function loginAction(input: LoginCredentials) {
   return safeAction<LoginResponse>(async () => {
-    const res = await serverRequest<LoginResponse>(`${endpoints.AUTH.login}`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
+    const res = await serverRequest<LoginResponse>(
+      `${endpoints.AUTH.login()}`,
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      },
+    );
     const cookiesStore = await cookies();
 
     if (res.data.user.role.name !== "ADMIN") {
@@ -36,7 +39,7 @@ export async function loginAction(input: LoginCredentials) {
 
 export async function meAction() {
   return safeAction<MeData>(() =>
-    serverRequest<MeData>(`${endpoints.AUTH.me}`, {
+    serverRequest<MeData>(`${endpoints.AUTH.me()}`, {
       method: "GET",
     }),
   );

@@ -73,8 +73,6 @@ export function UserProfileDropdown() {
     return <div className="text-red-600">Utilisateur non trouvé</div>;
   }
 
-  console.log("currentUser", currentUser);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

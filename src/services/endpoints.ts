@@ -1,5 +1,4 @@
 export const BASE_URL = process.env.API_BASE_URL;
-export const paymentApiEndpoints = process.env.PAYMENT_API;
 export const BASE_URL_DELIVERY = process.env.NEXT_PUBLIC_API_BASE_URL_DELIVERY;
 
 export const endpoints = {
@@ -68,13 +67,12 @@ export const endpoints = {
       }
       return url;
     },
-
     getOneOrder: (id: string) => `${BASE_URL}/orders/${id}`,
     deleteOneOrder: (id: string) => `${BASE_URL}/orders/${id}`,
   },
   TOPCOUNT: {
     product: (page?: number, limit?: number) =>
-      `${BASE_URL}/products?page=${page}&limit=${limit}`,
+      `${BASE_URL}/products/top?page=${page}&limit=${limit}`,
     seller: () => `${BASE_URL}/sellers/topSeller/`,
     topCategory: () => `${BASE_URL}/categories/top`,
   },

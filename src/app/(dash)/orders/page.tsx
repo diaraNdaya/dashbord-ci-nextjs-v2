@@ -9,9 +9,7 @@ export const metadata = metaObject("Gestion des commandes");
 
 export default async function OrdersPage() {
   const qc = getQueryClient();
-
   await qc.prefetchQuery(meQueryOptions());
-
   return (
     <RQProvider state={dehydrate(qc)}>
       <OrdersTemplate />

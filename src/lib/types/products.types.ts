@@ -118,3 +118,15 @@ export interface SellersApiResponse {
   totalPages: number;
   page: number;
 }
+// Types pour les paramètres des actions produits
+export interface ProductBySellerParams {
+  id: string;
+  page: number;
+  limit: number;
+}
+
+// Type pour les réponses de suppression
+export interface ProductDeleteResponse {
+  success: boolean;
+  message: string;
+}
