@@ -37,12 +37,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Customer, Seller } from "@/lib/types/index";
-
-type UserData = Customer | Seller;
+import type { UserTableRow } from "@/lib/types/user-table.type";
 
 interface UsersDataTableProps {
-  data: UserData[];
+  data: UserTableRow[];
   onViewUser: (userId: string) => void;
   onBlockUser: (userId: string) => void;
   searchQuery?: string;
@@ -63,16 +61,12 @@ export function UsersDataTable({
   const [globalFilter, setGlobalFilter] = useState<string>(searchQuery);
   const [rowSelection, setRowSelection] = useState({});
 
-  // Synchronize global filter with search query
   useEffect(() => {
     setGlobalFilter(searchQuery);
   }, [searchQuery]);
 
-  const getStatusBadge = (user: UserData) => {
-    const isBlocked = user.user?.isBlocked || false;
-    const isVerified = user.isVerified || false;
-
-    if (isBlocked) {
+  const getStatusBadge = (user: UserTableRow) => {
+    if (user.isBlocked) {
       return (
         <Badge
           variant="destructive"
@@ -82,7 +76,8 @@ export function UsersDataTable({
         </Badge>
       );
     }
-    if (isVerified) {
+
+    if (user.isVerified) {
       return (
         <Badge
           variant="default"
@@ -92,6 +87,7 @@ export function UsersDataTable({
         </Badge>
       );
     }
+
     return (
       <Badge
         variant="secondary"
@@ -102,27 +98,7 @@ export function UsersDataTable({
     );
   };
 
-  const getUserName = (user: UserData) => {
-    if ("store_name" in user) {
-      // It's a Seller
-      return user.store_name;
-    } else {
-      // It's a Customer
-      return user.name;
-    }
-  };
-
-  const getUserLocation = (user: UserData) => {
-    if ("business_address" in user) {
-      // It's a Seller
-      return user.business_address;
-    } else {
-      // It's a Customer
-      return user.address;
-    }
-  };
-
-  const columns: ColumnDef<UserData>[] = [
+  const columns: ColumnDef<UserTableRow>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -146,33 +122,30 @@ export function UsersDataTable({
       enableHiding: false,
     },
     {
-      accessorKey: "name",
+      accessorKey: "displayName",
       header: userType.includes("sellers") ? "Nom du magasin" : "Nom",
       cell: ({ row }) => {
         const user = row.original;
-        const avatar = "company_logo" in user ? user.company_logo : null;
 
         return (
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 rounded-full overflow-hidden bg-muted">
-              {avatar ? (
+              {user.avatar ? (
                 <Image
-                  src={avatar}
-                  alt={getUserName(user)}
+                  src={user.avatar}
+                  alt={user.displayName}
                   fill
                   className="object-cover"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-                  {getUserName(user).charAt(0).toUpperCase()}
+                  {user.displayName.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
             <div>
-              <div className="font-medium">{getUserName(user)}</div>
-              <div className="text-sm text-muted-foreground">
-                {user.user?.email || "N/A"}
-              </div>
+              <div className="font-medium">{user.displayName}</div>
+              <div className="text-sm text-muted-foreground">{user.email || "N/A"}</div>
             </div>
           </div>
         );
@@ -183,13 +156,11 @@ export function UsersDataTable({
       header: userType.includes("sellers") ? "Adresse commerciale" : "Ville",
       cell: ({ row }) => {
         const user = row.original;
-        const location = getUserLocation(user);
-        const city = user.user?.city;
 
         return (
           <div className="text-sm">
-            <div>{location || "N/A"}</div>
-            {city && <div className="text-muted-foreground">{city}</div>}
+            <div>{user.location || "N/A"}</div>
+            {user.city && <div className="text-muted-foreground">{user.city}</div>}
           </div>
         );
       },
@@ -198,7 +169,7 @@ export function UsersDataTable({
       accessorKey: "phone",
       header: "Téléphone",
       cell: ({ row }) => {
-        const phone = row.original.user?.phone_number;
+        const phone = row.original.phone;
         return <div className="text-sm">{phone || "N/A"}</div>;
       },
     },
@@ -221,17 +192,13 @@ export function UsersDataTable({
     {
       accessorKey: "status",
       header: "Statut",
-      cell: ({ row }) => {
-        const user = row.original;
-        return getStatusBadge(user);
-      },
+      cell: ({ row }) => getStatusBadge(row.original),
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
         const user = row.original;
-        const isBlocked = user.user?.isBlocked || false;
 
         return (
           <DropdownMenu>
@@ -241,14 +208,14 @@ export function UsersDataTable({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onViewUser(user.id)}>
+              <DropdownMenuItem onClick={() => onViewUser(user.profileId)}>
                 <HugeiconsIcon icon={ViewIcon} className="mr-2 h-4 w-4" />
                 Voir détails
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onBlockUser(user.id)}
                 className={
-                  isBlocked
+                  user.isBlocked
                     ? "text-vert-menthe focus:text-vert-menthe"
                     : "text-rouge-vif focus:text-rouge-vif"
                 }
@@ -257,7 +224,7 @@ export function UsersDataTable({
                   icon={UserBlock01Icon}
                   className="mr-2 h-4 w-4"
                 />
-                {isBlocked ? "Débloquer" : "Bloquer"}
+                {user.isBlocked ? "Débloquer" : "Bloquer"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -276,18 +243,17 @@ export function UsersDataTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    globalFilterFn: (row, columnId, filterValue) => {
+    globalFilterFn: (row, _columnId, filterValue) => {
       const searchValue = filterValue?.toLowerCase() || "";
       if (!searchValue) return true;
 
-      // Search in multiple fields
       const user = row.original;
       const searchFields = [
-        getUserName(user),
-        user.user?.email,
-        user.user?.phone_number,
-        getUserLocation(user),
-        user.user?.city,
+        user.displayName,
+        user.email,
+        user.phone,
+        user.location,
+        user.city,
       ];
 
       return searchFields.some((field) =>

@@ -38,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Product } from "@/lib/types/products.types";
+import { formatPrice } from "@/lib/utils";
 
 interface ProductsDataTableProps {
   data: Product[];
@@ -189,10 +190,7 @@ export function ProductsDataTable({
       header: "Price",
       cell: ({ row }) => {
         const price = row.getValue("price") as number;
-        const currency = row.original.currency || "FCFA";
-        return (
-          <div className="font-medium">${price?.toLocaleString() || 0}</div>
-        );
+        return <div className="font-medium">{formatPrice(price)}</div>;
       },
     },
     {

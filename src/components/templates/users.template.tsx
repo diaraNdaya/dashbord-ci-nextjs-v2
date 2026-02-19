@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { UserStatsCard } from "@/components/atoms/UserStatsCard";
 import TablePagination from "@/components/molecules/TablePagination";
@@ -11,17 +11,9 @@ import { UsersDataTable } from "@/components/molecules/UsersDataTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
-  Search01Icon,
   ShoppingBag01Icon,
   UserBlock01Icon,
   UserCheck01Icon,
@@ -29,7 +21,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import type { Customer, Seller } from "@/lib/types/index";
+import type { Customer, Seller, userBlockedData } from "@/lib/types/index";
+import type { UserTableCategory, UserTableRow } from "@/lib/types/user-table.type";
 import {
   blockUserMutationOptions,
   fetchSellersQueryOptions,
@@ -38,22 +31,102 @@ import {
 } from "@/services/queries/user.queries";
 import { toastErr, toastSuccess } from "../molecules/ToastCard";
 
-type UserData = Customer | Seller;
+type ActiveTab = "all" | "verified" | "unverified" | "blocked";
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const mapCustomerToRow = (customer: Customer): UserTableRow => ({
+  id: customer.id,
+  profileId: customer.id,
+  category: "customers",
+  displayName: customer.name,
+  email: customer.user?.email ?? "",
+  phone: String(customer.user?.phone_number ?? ""),
+  location: customer.address ?? "",
+  city: customer.user?.city ?? "",
+  createdAt: customer.createdAt,
+  isVerified: customer.isVerified,
+  isBlocked: Boolean(customer.user?.isBlocked),
+  avatar: null,
+});
+
+const mapSellerToRow = (seller: Seller): UserTableRow => ({
+  id: seller.id,
+  profileId: seller.id,
+  category: "sellers",
+  displayName: seller.store_name,
+  email: seller.user?.email ?? "",
+  phone: String(seller.user?.phone_number ?? ""),
+  location: seller.business_address ?? "",
+  city: seller.user?.city ?? "",
+  createdAt: seller.createdAt,
+  isVerified: seller.isVerified,
+  isBlocked: Boolean(seller.user?.isBlocked),
+  avatar: seller.company_logo ?? null,
+});
+
+const mapBlockedUserToRow = (blockedUser: userBlockedData): UserTableRow => {
+  const sellerProfile = blockedUser.Seller;
+  const customerProfile = blockedUser.Customers;
+  const isSeller =
+    Boolean(blockedUser.isVendor) || Boolean(sellerProfile?.store_name);
+  const category: UserTableCategory = isSeller ? "sellers" : "customers";
+
+  return {
+    id: blockedUser.id,
+    profileId: sellerProfile?.id ?? customerProfile?.id ?? blockedUser.id,
+    category,
+    displayName:
+      sellerProfile?.store_name ??
+      customerProfile?.name ??
+      blockedUser.username ??
+      blockedUser.email,
+    email: blockedUser.email ?? "",
+    phone: String(blockedUser.phone_number ?? ""),
+    location:
+      sellerProfile?.business_address ??
+      customerProfile?.address ??
+      blockedUser.city ??
+      "",
+    city: blockedUser.city ?? "",
+    createdAt: blockedUser.createdAt,
+    isVerified: Boolean(sellerProfile?.isVerified ?? customerProfile?.isVerified),
+    isBlocked: Boolean(blockedUser.isBlocked),
+    avatar: sellerProfile?.company_logo ?? null,
+  };
+};
 
 export default function UsersTemplate() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"customers" | "sellers">(
-    "customers",
-  );
-  const [cityFilter, setCityFilter] = useState("");
+  const [viewMode, setViewMode] = useState<UserTableCategory>("customers");
+
+  const [nameInput, setNameInput] = useState("");
+  const [cityInput, setCityInput] = useState("");
   const [nameFilter, setNameFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // Queries
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setNameFilter(nameInput.trim());
+      setCityFilter(cityInput.trim());
+      setPage(1);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [nameInput, cityInput]);
+
   const { data: customersData, isLoading: isLoadingCustomers } = useQuery(
     fetchUsersQueryOptions(page, limit, {
       name: nameFilter || undefined,
@@ -68,11 +141,10 @@ export default function UsersTemplate() {
     }),
   );
 
-  const { data: blockedCustomersData } = useQuery(
+  const { data: blockedCustomersData, isLoading: isLoadingBlocked } = useQuery(
     fetchUsersBlockedQueryOptions(page, limit),
   );
 
-  // Mutations
   const blockUserMutation = useMutation({
     ...blockUserMutationOptions(),
     onSuccess: () => {
@@ -85,8 +157,10 @@ export default function UsersTemplate() {
     },
   });
 
-  const handleViewUser = (userId: string) => {
-    router.push(`/users/${userId}`);
+  const handleViewUser = (profileId: string) => {
+    const basePath =
+      viewMode === "customers" ? "/users/customers" : "/users/sellers";
+    router.push(`${basePath}/${profileId}`);
   };
 
   const handleBlockUser = (userId: string) => {
@@ -109,117 +183,71 @@ export default function UsersTemplate() {
   };
 
   const handleTabChange = (newTab: string) => {
-    setActiveTab(newTab);
+    setActiveTab(newTab as ActiveTab);
     setPage(1);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setPage(1);
-  };
-
-  const handleViewModeChange = (mode: "customers" | "sellers") => {
+  const handleViewModeChange = (mode: UserTableCategory) => {
     setViewMode(mode);
     setPage(1);
     setActiveTab("all");
   };
 
   const handleCityFilterChange = (value: string) => {
-    setCityFilter(value === "all" ? "" : value);
-    setPage(1);
+    setCityInput(value);
   };
 
   const handleNameFilterChange = (value: string) => {
-    setNameFilter(value);
-    setPage(1);
+    setNameInput(value);
   };
 
-  // Extract data based on current view mode and tab
-  const getCurrentData = (): UserData[] => {
-    let sourceData;
+  const allCustomers = customersData?.data?.data ?? [];
+  const allSellers = sellersData?.data?.data ?? [];
+  const blockedUsers = blockedCustomersData?.data?.data ?? [];
 
-    if (activeTab === "blocked-customers") {
-      sourceData = blockedCustomersData;
-    } else if (viewMode === "customers") {
-      sourceData = customersData;
-    } else {
-      sourceData = sellersData;
+  const mappedCustomers = allCustomers.map(mapCustomerToRow);
+  const mappedSellers = allSellers.map(mapSellerToRow);
+  const mappedBlockedUsers = blockedUsers.map(mapBlockedUserToRow);
+
+  const getCurrentData = (): UserTableRow[] => {
+    if (activeTab === "blocked") {
+      return mappedBlockedUsers.filter((user) => user.category === viewMode);
     }
-
-    if (!sourceData) return [];
-    if (Array.isArray(sourceData)) return sourceData;
-    if ("data" in sourceData && Array.isArray(sourceData.data)) {
-      return sourceData.data;
-    }
-    return [];
-  };
-
-  const getCurrentTotalItems = (): number => {
-    let sourceData;
-
-    if (activeTab === "blocked-customers") {
-      sourceData = blockedCustomersData;
-    } else if (viewMode === "customers") {
-      sourceData = customersData;
-    } else {
-      sourceData = sellersData;
-    }
-
-    if (!sourceData) return 0;
-    if (
-      "totalItems" in sourceData &&
-      typeof sourceData.totalItems === "number"
-    ) {
-      return sourceData.totalItems;
-    }
-    return getCurrentData().length;
+    return viewMode === "customers" ? mappedCustomers : mappedSellers;
   };
 
   const currentData = getCurrentData();
-  const currentTotalItems = getCurrentTotalItems();
 
-  // Filter data based on search and tab
   const filteredData = currentData.filter((user) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      (viewMode === "customers"
-        ? (user as Customer).name
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())
-        : (user as Seller).store_name
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-      user.user?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.user?.city?.toLowerCase().includes(searchQuery.toLowerCase());
-
     const matchesTab =
       activeTab === "all" ||
-      (activeTab === "verified" && (user as Customer | Seller).isVerified) ||
-      (activeTab === "unverified" && !(user as Customer | Seller).isVerified) ||
-      (activeTab === "blocked-customers" && user.user?.isBlocked) ||
-      (activeTab === "blocked-sellers" && user.user?.isBlocked);
+      (activeTab === "verified" && user.isVerified) ||
+      (activeTab === "unverified" && !user.isVerified) ||
+      (activeTab === "blocked" && user.isBlocked && user.category === viewMode);
 
-    return matchesSearch && matchesTab;
+    return matchesTab;
   });
 
-  // Calculate stats
-  const allCustomers = customersData?.data || [];
-  const allSellers = sellersData?.data || [];
-  const blockedUsers = blockedCustomersData?.data || [];
+  const currentTotalItems =
+    activeTab === "blocked"
+      ? currentData.length
+      : viewMode === "customers"
+        ? toNumber(customersData?.data?.totalItems)
+        : toNumber(sellersData?.data?.totalItems);
 
   const stats = {
-    totalCustomers: Array.isArray(allCustomers) ? allCustomers.length : 0,
-    totalSellers: Array.isArray(allSellers) ? allSellers.length : 0,
-    verifiedCustomers: Array.isArray(allCustomers)
-      ? allCustomers.filter((c: Customer) => c.isVerified).length
-      : 0,
-    verifiedSellers: Array.isArray(allSellers)
-      ? allSellers.filter((s: Seller) => s.isVerified).length
-      : 0,
-    blockedUsers: Array.isArray(blockedUsers) ? blockedUsers.length : 0,
+    totalCustomers: toNumber(customersData?.data?.totalItems),
+    totalSellers: toNumber(sellersData?.data?.totalItems),
+    verifiedCustomers: mappedCustomers.filter((customer) => customer.isVerified)
+      .length,
+    verifiedSellers: mappedSellers.filter((seller) => seller.isVerified).length,
+    blockedUsers: toNumber(
+      blockedCustomersData?.data?.totalItems,
+      mappedBlockedUsers.length,
+    ),
     totalUsers:
-      (Array.isArray(allCustomers) ? allCustomers.length : 0) +
-      (Array.isArray(allSellers) ? allSellers.length : 0),
+      toNumber(customersData?.data?.totalItems) +
+      toNumber(sellersData?.data?.totalItems),
   };
 
   const getCurrentUserType = ():
@@ -227,13 +255,18 @@ export default function UsersTemplate() {
     | "sellers"
     | "blocked-customers"
     | "blocked-sellers" => {
-    if (activeTab === "blocked-customers") return "blocked-customers";
-    if (activeTab === "blocked-sellers") return "blocked-sellers";
+    if (activeTab === "blocked") {
+      return viewMode === "customers" ? "blocked-customers" : "blocked-sellers";
+    }
     return viewMode;
   };
 
   const isLoading =
-    viewMode === "customers" ? isLoadingCustomers : isLoadingSellers;
+    activeTab === "blocked"
+      ? isLoadingBlocked
+      : viewMode === "customers"
+        ? isLoadingCustomers
+        : isLoadingSellers;
 
   return (
     <motion.div
@@ -243,7 +276,6 @@ export default function UsersTemplate() {
       transition={{ duration: 0.6 }}
     >
       <div className="@container/main flex flex-1 flex-col gap-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -266,7 +298,6 @@ export default function UsersTemplate() {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -327,7 +358,6 @@ export default function UsersTemplate() {
           </div>
         </motion.div>
 
-        {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -338,8 +368,7 @@ export default function UsersTemplate() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <CardTitle>Gestion des utilisateurs</CardTitle>
-                  {/* View Mode Toggle Buttons */}
-                  <div className="flex items-center gap-2 ml-6">
+                  <div className="ml-6 flex items-center gap-2">
                     <Button
                       variant={viewMode === "customers" ? "default" : "outline"}
                       size="sm"
@@ -357,55 +386,29 @@ export default function UsersTemplate() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select
-                    value={cityFilter === "" ? "all" : cityFilter}
-                    onValueChange={handleCityFilterChange}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Ville" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes les villes</SelectItem>
-                      <SelectItem value="Abidjan">Abidjan</SelectItem>
-                      <SelectItem value="Bouaké">Bouaké</SelectItem>
-                      <SelectItem value="Yamoussoukro">Yamoussoukro</SelectItem>
-                      <SelectItem value="San-Pédro">San-Pédro</SelectItem>
-                    </SelectContent>
-                  </Select>
-
                   <Input
-                    placeholder="Filtrer par nom..."
+                    placeholder="Nom (API)..."
                     className="w-40"
-                    value={nameFilter}
+                    value={nameInput}
                     onChange={(e) => handleNameFilterChange(e.target.value)}
                   />
-
-                  <div className="relative">
-                    <HugeiconsIcon
-                      icon={Search01Icon}
-                      className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                    />
-                    <Input
-                      placeholder="Rechercher..."
-                      className="pl-9 w-64"
-                      value={searchQuery}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                    />
-                  </div>
+                  <Input
+                    placeholder="Ville (API)..."
+                    className="w-40"
+                    value={cityInput}
+                    onChange={(e) => handleCityFilterChange(e.target.value)}
+                  />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="all">Tous</TabsTrigger>
                   <TabsTrigger value="verified">Vérifiés</TabsTrigger>
                   <TabsTrigger value="unverified">Non vérifiés</TabsTrigger>
-                  <TabsTrigger value="blocked-customers">
-                    Clients bloqués
-                  </TabsTrigger>
-                  <TabsTrigger value="blocked-sellers">
-                    Vendeurs bloqués
+                  <TabsTrigger value="blocked">
+                    {viewMode === "customers" ? "Clients bloqués" : "Vendeurs bloqués"}
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value={activeTab} className="mt-6 space-y-4">
@@ -419,7 +422,7 @@ export default function UsersTemplate() {
                         data={filteredData}
                         onViewUser={handleViewUser}
                         onBlockUser={handleBlockUser}
-                        searchQuery={searchQuery}
+                        searchQuery=""
                         userType={getCurrentUserType()}
                       />
                       <TablePagination

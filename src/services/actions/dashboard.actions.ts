@@ -1,7 +1,6 @@
 "use server";
 
 import { SalesData, TopProductsData, UsersData } from "@/lib/types";
-import { ApiResponse } from "@/services/api.type";
 import { endpoints } from "@/services/endpoints";
 import { serverRequest } from "@/services/server/axios-server.server";
 import { safeAction } from "@/services/server/safe-action.server";
@@ -37,14 +36,13 @@ export async function getProductReport(credentials: {
   year: number;
   month: number;
 }) {
-  return safeAction<ApiResponse<TopProductsData[]>>(async () => {
-    const res = await serverRequest<ApiResponse<TopProductsData[]>>(
+  return safeAction<TopProductsData[]>(async () => {
+    return serverRequest<TopProductsData[]>(
       endpoints.DASHBOARD.getProductReport(credentials.year, credentials.month),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
@@ -52,14 +50,13 @@ export async function getSalesReport(credentials: {
   period: string;
   date: string;
 }) {
-  return safeAction<ApiResponse<SalesData[]>>(async () => {
-    const res = await serverRequest<ApiResponse<SalesData[]>>(
+  return safeAction<SalesData[]>(async () => {
+    return serverRequest<SalesData[]>(
       endpoints.DASHBOARD.getSalesData(credentials.period, credentials.date),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
@@ -67,38 +64,35 @@ export async function getUserReport(credentials: {
   year: number;
   month: number;
 }) {
-  return safeAction<ApiResponse<UsersData[]>>(async () => {
-    const res = await serverRequest<ApiResponse<UsersData[]>>(
+  return safeAction<UsersData[]>(async () => {
+    return serverRequest<UsersData[]>(
       endpoints.DASHBOARD.getUserData(credentials.month, credentials.year),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
 export async function getDashboardData() {
-  return safeAction<ApiResponse<DashboardStats>>(async () => {
-    const res = await serverRequest<ApiResponse<DashboardStats>>(
+  return safeAction<DashboardStats>(async () => {
+    return serverRequest<DashboardStats>(
       endpoints.DASHBOARD.getDashboardData(),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
 export async function getMetricsData() {
-  return safeAction<ApiResponse<MetricsData>>(async () => {
-    const res = await serverRequest<ApiResponse<MetricsData>>(
+  return safeAction<MetricsData>(async () => {
+    return serverRequest<MetricsData>(
       endpoints.DASHBOARD.getMetricsData(),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
@@ -106,8 +100,8 @@ export async function getTopProductsByPeriod(credentials: {
   period: string;
   date: string;
 }) {
-  return safeAction<ApiResponse<TopProductsData[]>>(async () => {
-    const res = await serverRequest<ApiResponse<TopProductsData[]>>(
+  return safeAction<TopProductsData[]>(async () => {
+    return serverRequest<TopProductsData[]>(
       endpoints.DASHBOARD.getTopProductsByPeriod(
         credentials.period,
         credentials.date,
@@ -116,7 +110,6 @@ export async function getTopProductsByPeriod(credentials: {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
@@ -124,14 +117,13 @@ export async function getTopSeller(credentials: {
   year: number;
   month: number;
 }) {
-  return safeAction<ApiResponse<TopSeller[]>>(async () => {
-    const res = await serverRequest<ApiResponse<TopSeller[]>>(
+  return safeAction<TopSeller[]>(async () => {
+    return serverRequest<TopSeller[]>(
       endpoints.DASHBOARD.getTopSeller(credentials.year, credentials.month),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
@@ -139,8 +131,8 @@ export async function getTopSellerByPeriod(credentials: {
   period: string;
   date: string;
 }) {
-  return safeAction<ApiResponse<TopSeller[]>>(async () => {
-    const res = await serverRequest<ApiResponse<TopSeller[]>>(
+  return safeAction<TopSeller[]>(async () => {
+    return serverRequest<TopSeller[]>(
       endpoints.DASHBOARD.getTopSellerByPeriod(
         credentials.period,
         credentials.date,
@@ -149,7 +141,6 @@ export async function getTopSellerByPeriod(credentials: {
         method: "GET",
       },
     );
-    return res;
   });
 }
 
@@ -157,13 +148,12 @@ export async function getTopCategory(credentials: {
   year: number;
   month: number;
 }) {
-  return safeAction<ApiResponse<TopCategory[]>>(async () => {
-    const res = await serverRequest<ApiResponse<TopCategory[]>>(
+  return safeAction<TopCategory[]>(async () => {
+    return serverRequest<TopCategory[]>(
       endpoints.DASHBOARD.getTopCategory(credentials.year, credentials.month),
       {
         method: "GET",
       },
     );
-    return res;
   });
 }

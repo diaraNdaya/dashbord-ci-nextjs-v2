@@ -3,7 +3,12 @@
 import type {
   CustomersApiResponse,
   SellersApiResponse,
+  userBlockedDataResponse,
 } from "@/lib/types/index";
+import type {
+  CustomerDetailApiResponse,
+  SellerDetailApiResponse,
+} from "@/lib/types/user-details.type";
 import type {
   CustomerSearchParams,
   SellerSearchParams,
@@ -43,7 +48,6 @@ export async function fetchUsersAction(
   });
 }
 
-// Actions pour les vendeurs
 export async function fetchSellersAction(
   page: number,
   limit: number,
@@ -72,8 +76,8 @@ export async function fetchTopSellersAction() {
 }
 
 export async function fetchUsersBlockedAction(page: number, limit: number) {
-  return safeAction<CustomersApiResponse>(async () => {
-    return serverRequest<CustomersApiResponse>(
+  return safeAction<userBlockedDataResponse>(async () => {
+    return serverRequest<userBlockedDataResponse>(
       endpoints.CUSTOMER.allCustomerBloqued(page, limit),
       {
         method: "GET",
@@ -88,6 +92,28 @@ export async function blockUserAction(id: string) {
       endpoints.CUSTOMER.blockedUser(id),
       {
         method: "PUT",
+      },
+    );
+  });
+}
+
+export async function getOneCustomerAction(id: string) {
+  return safeAction<CustomerDetailApiResponse>(async () => {
+    return serverRequest<CustomerDetailApiResponse>(
+      endpoints.CUSTOMER.getOneCustomer(id),
+      {
+        method: "GET",
+      },
+    );
+  });
+}
+
+export async function getOneSellerAction(id: string) {
+  return safeAction<SellerDetailApiResponse>(async () => {
+    return serverRequest<SellerDetailApiResponse>(
+      endpoints.SELLER.getOneSeller(id),
+      {
+        method: "GET",
       },
     );
   });

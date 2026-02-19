@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Product } from "@/lib/types/products.types";
+import { formatPrice } from "@/lib/utils";
 import { Delete02Icon, ViewIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
@@ -77,7 +78,7 @@ export function ProductCard({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-lg font-bold text-violet-vif">
-                  {product.price?.toLocaleString()} {product.currency}
+                  {formatPrice(product.price)}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Stock: {product.stockQuantity}

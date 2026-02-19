@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Order } from "@/lib/types/orders.type";
 import { getShippingMethodLabel } from "@/lib/types/orders.type";
+import { formatPrice } from "@/lib/utils";
 import { TruckIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
@@ -38,8 +39,7 @@ export function ShippingDetails({ order, orderId }: ShippingDetailsProps) {
             </div>
             {order.shippingMethods?.price && (
               <p className="text-sm text-muted-foreground">
-                Frais de livraison:{" "}
-                {order.shippingMethods.price.toLocaleString()} {order.currency}
+                Frais de livraison: {formatPrice(order.shippingMethods.price)}
               </p>
             )}
             <p className="text-sm text-muted-foreground">

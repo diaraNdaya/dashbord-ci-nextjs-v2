@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { formatPrice } from "@/lib/utils";
 import { getOneProductQueryOptions } from "@/services/queries/products.queries";
 import {
   ArrowLeft01Icon,
@@ -55,7 +56,6 @@ export default function ProductDetailsTemplate({
   }
 
   console.log("Details", productData);
-  // The query now returns the product directly
   const product = productData;
 
   if (!product) {
@@ -225,7 +225,7 @@ export default function ProductDetailsTemplate({
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-violet-vif">
-                      {product.price?.toLocaleString()} {product.currency}
+                      {formatPrice(product.price)}
                     </div>
                     {product.Reviews && product.Reviews.length > 0 && (
                       <div className="flex items-center gap-1 mt-2">

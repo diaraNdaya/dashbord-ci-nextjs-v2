@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Product } from "@/lib/types/products.types";
+import { formatPrice } from "@/lib/utils";
 import { ViewIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
@@ -133,7 +134,7 @@ export function TopProductsTable({
                         {product.name}
                       </h4>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>${product.price?.toLocaleString() || 0}</span>
+                        <span>{formatPrice(product.price)}</span>
                         <span>•</span>
                         <span>{product.categories?.name || "N/A"}</span>
                       </div>

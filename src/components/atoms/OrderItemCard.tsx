@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import Image from "next/image";
 
 import type { OrderItem } from "@/lib/types/orders.type";
+import { formatPrice } from "@/lib/utils";
 import { Package01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -51,11 +52,9 @@ export function OrderItemCard({
         )}
       </div>
       <div className="text-right">
-        <p className="font-medium">
-          {item.price?.toLocaleString()} {currency} x {item.quantity}
-        </p>
+        <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
         <p className="text-lg font-bold">
-          {(item.price * item.quantity)?.toLocaleString()} {currency}
+          {formatPrice(item.price * item.quantity)}
         </p>
       </div>
     </motion.div>

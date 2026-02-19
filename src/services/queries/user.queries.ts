@@ -1,3 +1,4 @@
+import type { Customer, Seller } from "@/lib/types/index";
 import type {
   CustomerSearchParams,
   SellerSearchParams,
@@ -15,6 +16,8 @@ import {
   fetchTopSellersAction,
   fetchUsersAction,
   fetchUsersBlockedAction,
+  getOneCustomerAction,
+  getOneSellerAction,
 } from "@/services/actions/user.actions";
 
 // Queries pour les clients
@@ -93,6 +96,62 @@ export const fetchUsersBlockedQueryOptions = (page: number, limit: number) => ({
         "Erreur lors de la récupération des utilisateurs bloqués",
     );
   },
+});
+
+export const getOneCustomerQueryOptions = (id: string) => ({
+  queryKey: ["users", "customers", id] as const,
+  queryFn: async (): Promise<Customer> => {
+    const result = await getOneCustomerAction(id);
+    if (!result.success) {
+      throw new Error(
+        result.error.message ||
+          "Erreur lors de la récupération des détails du client",
+      );
+    }
+
+    const payload = result.data?.data as {
+      customer?: Customer;
+      data?: Customer;
+    };
+
+    const fallbackCustomer =
+      payload && "id" in payload ? (payload as unknown as Customer) : undefined;
+    const customer = payload?.customer ?? payload?.data ?? fallbackCustomer;
+    if (!customer) {
+      throw new Error("Client introuvable");
+    }
+
+    return customer;
+  },
+  enabled: Boolean(id),
+});
+
+export const getOneSellerQueryOptions = (id: string) => ({
+  queryKey: ["users", "sellers", id] as const,
+  queryFn: async (): Promise<Seller> => {
+    const result = await getOneSellerAction(id);
+    if (!result.success) {
+      throw new Error(
+        result.error.message ||
+          "Erreur lors de la récupération des détails du vendeur",
+      );
+    }
+
+    const payload = result.data?.data as {
+      seller?: Seller;
+      data?: Seller;
+    };
+
+    const fallbackSeller =
+      payload && "id" in payload ? (payload as unknown as Seller) : undefined;
+    const seller = payload?.seller ?? payload?.data ?? fallbackSeller;
+    if (!seller) {
+      throw new Error("Vendeur introuvable");
+    }
+
+    return seller;
+  },
+  enabled: Boolean(id),
 });
 
 // Queries pour les documents

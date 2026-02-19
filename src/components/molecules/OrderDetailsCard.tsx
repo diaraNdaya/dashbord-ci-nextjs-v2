@@ -4,6 +4,7 @@ import { OrderTrackingStep } from "@/components/atoms/OrderTrackingStep";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Order } from "@/lib/types/orders.type";
+import { formatPrice } from "@/lib/utils";
 import {
   CheckmarkCircle02Icon,
   CreditCardIcon,
@@ -57,7 +58,7 @@ export function OrderDetailsCard({ order }: OrderDetailsCardProps) {
       (sum, item) => sum + item.price * item.quantity,
       0,
     ) || 0;
-  const shipping = 3500; // Frais de livraison fixes
+  const shipping = 3500;
   const tax = 0; // Pas de taxe
   const total = subtotal + shipping + tax;
 
@@ -119,10 +120,10 @@ export function OrderDetailsCard({ order }: OrderDetailsCardProps) {
                 </div>
                 <div className="text-right">
                   <p className="font-medium">
-                    {item.price?.toLocaleString()} FCFA x {item.quantity}
+                    {formatPrice(item.price)} x {item.quantity}
                   </p>
                   <p className="text-lg font-bold">
-                    {(item.price * item.quantity)?.toLocaleString()} FCFA
+                    {formatPrice(item.price * item.quantity)}
                   </p>
                 </div>
               </motion.div>
@@ -134,20 +135,20 @@ export function OrderDetailsCard({ order }: OrderDetailsCardProps) {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Sous-total</span>
-                <span>{subtotal.toLocaleString()} FCFA</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Livraison</span>
-                <span>{shipping.toLocaleString()} FCFA</span>
+                <span>{formatPrice(shipping)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Taxe</span>
-                <span>{tax.toLocaleString()} FCFA</span>
+                <span>{formatPrice(tax)}</span>
               </div>
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span>{total.toLocaleString()} FCFA</span>
+                <span>{formatPrice(total)}</span>
               </div>
             </div>
 

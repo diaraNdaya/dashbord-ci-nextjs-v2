@@ -26,7 +26,7 @@ export const endpoints = {
     },
     allCustomerBloqued: (page?: number, limit?: number) =>
       `${BASE_URL}/admins/users-blocked?page=${page}&limit=${limit}`,
-    getOne: (id: string) => `${BASE_URL}/customers/${id}`,
+    getOneCustomer: (id: string) => `${BASE_URL}/customers/${id}`,
     deleteOne: (id: string) => `${BASE_URL}/customers/${id}`,
     blockedUser: (id: string) => `${BASE_URL}/users/block/${id}`,
   },
@@ -44,7 +44,6 @@ export const endpoints = {
         params.append("business_address", business_address.trim());
       if (store_name && store_name.trim() !== "")
         params.append("store_name", store_name.trim());
-
       return `${BASE_URL}/sellers?${params.toString()}`;
     },
     topSeller: () => `${BASE_URL}/sellers/topSeller/`,
