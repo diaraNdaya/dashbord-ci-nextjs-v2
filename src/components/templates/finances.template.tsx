@@ -46,7 +46,6 @@ export default function FinancesTemplate() {
           </div>
         </motion.div>
 
-        {/* Financial stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -137,7 +136,6 @@ export default function FinancesTemplate() {
           </motion.div>
         </div>
 
-        {/* Financial breakdown */}
         <div className="grid gap-4 md:grid-cols-2">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
