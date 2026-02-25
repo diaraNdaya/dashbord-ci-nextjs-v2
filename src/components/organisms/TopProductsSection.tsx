@@ -20,8 +20,37 @@ type ProductItem = {
   revenus: number;
 };
 
-const normalizeProducts = (raw: unknown): ProductItem[] =>
-  toArrayFromPayload<ProductItem>(raw);
+const normalizeProducts = (raw: unknown): ProductItem[] => {
+  console.log("Raw products data:", raw);
+
+  // Handle the actual API response structure
+  if (raw && typeof raw === "object" && "data" in raw) {
+    const apiResponse = raw as { data?: unknown };
+
+    if (Array.isArray(apiResponse.data)) {
+      console.log("Found products array in data:", apiResponse.data);
+      return apiResponse.data as ProductItem[];
+    }
+
+    // If data is nested deeper
+    if (
+      apiResponse.data &&
+      typeof apiResponse.data === "object" &&
+      "data" in apiResponse.data
+    ) {
+      const nestedData = (apiResponse.data as { data?: unknown }).data;
+      if (Array.isArray(nestedData)) {
+        console.log("Found nested products array:", nestedData);
+        return nestedData as ProductItem[];
+      }
+    }
+  }
+
+  // Fallback to original logic
+  const result = toArrayFromPayload<ProductItem>(raw);
+  console.log("Products fallback result:", result);
+  return result;
+};
 
 export function TopProductsSection({ period, date }: TopProductsSectionProps) {
   const { data, isLoading } = useQuery(

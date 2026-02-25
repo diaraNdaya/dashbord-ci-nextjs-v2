@@ -21,8 +21,37 @@ type SellerItem = {
   revenue: number;
 };
 
-const normalizeSellers = (raw: unknown): SellerItem[] =>
-  toArrayFromPayload<SellerItem>(raw);
+const normalizeSellers = (raw: unknown): SellerItem[] => {
+  console.log("Raw sellers data:", raw);
+
+  // Handle the actual API response structure
+  if (raw && typeof raw === "object" && "data" in raw) {
+    const apiResponse = raw as { data?: unknown };
+
+    if (Array.isArray(apiResponse.data)) {
+      console.log("Found sellers array in data:", apiResponse.data);
+      return apiResponse.data as SellerItem[];
+    }
+
+    // If data is nested deeper
+    if (
+      apiResponse.data &&
+      typeof apiResponse.data === "object" &&
+      "data" in apiResponse.data
+    ) {
+      const nestedData = (apiResponse.data as { data?: unknown }).data;
+      if (Array.isArray(nestedData)) {
+        console.log("Found nested sellers array:", nestedData);
+        return nestedData as SellerItem[];
+      }
+    }
+  }
+
+  // Fallback to original logic
+  const result = toArrayFromPayload<SellerItem>(raw);
+  console.log("Sellers fallback result:", result);
+  return result;
+};
 
 export function TopSellersSection({ period, date }: TopSellersSectionProps) {
   const { data, isLoading } = useQuery(

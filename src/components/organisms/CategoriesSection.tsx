@@ -21,8 +21,37 @@ type CategoryItem = {
   products: number;
 };
 
-const normalizeCategories = (raw: unknown): CategoryItem[] =>
-  toArrayFromPayload<CategoryItem>(raw);
+const normalizeCategories = (raw: unknown): CategoryItem[] => {
+  console.log("Raw categories data:", raw);
+
+  // Handle the actual API response structure
+  if (raw && typeof raw === "object" && "data" in raw) {
+    const apiResponse = raw as { data?: unknown };
+
+    if (Array.isArray(apiResponse.data)) {
+      console.log("Found categories array in data:", apiResponse.data);
+      return apiResponse.data as CategoryItem[];
+    }
+
+    // If data is nested deeper
+    if (
+      apiResponse.data &&
+      typeof apiResponse.data === "object" &&
+      "data" in apiResponse.data
+    ) {
+      const nestedData = (apiResponse.data as { data?: unknown }).data;
+      if (Array.isArray(nestedData)) {
+        console.log("Found nested categories array:", nestedData);
+        return nestedData as CategoryItem[];
+      }
+    }
+  }
+
+  // Fallback to original logic
+  const result = toArrayFromPayload<CategoryItem>(raw);
+  console.log("Categories fallback result:", result);
+  return result;
+};
 
 export function CategoriesSection({ year, month }: CategoriesSectionProps) {
   const { data, isLoading } = useQuery(

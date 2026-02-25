@@ -24,8 +24,37 @@ type SalesItem = {
   commandes: number;
 };
 
-const normalizeSales = (raw: unknown): SalesItem[] =>
-  toArrayFromPayload<SalesItem>(raw);
+const normalizeSales = (raw: unknown): SalesItem[] => {
+  console.log("Raw sales data:", raw);
+
+  // Handle the actual API response structure
+  if (raw && typeof raw === "object" && "data" in raw) {
+    const apiResponse = raw as { data?: unknown };
+
+    if (Array.isArray(apiResponse.data)) {
+      console.log("Found array in data:", apiResponse.data);
+      return apiResponse.data as SalesItem[];
+    }
+
+    // If data is nested deeper
+    if (
+      apiResponse.data &&
+      typeof apiResponse.data === "object" &&
+      "data" in apiResponse.data
+    ) {
+      const nestedData = (apiResponse.data as { data?: unknown }).data;
+      if (Array.isArray(nestedData)) {
+        console.log("Found nested array:", nestedData);
+        return nestedData as SalesItem[];
+      }
+    }
+  }
+
+  // Fallback to original logic
+  const result = toArrayFromPayload<SalesItem>(raw);
+  console.log("Fallback result:", result);
+  return result;
+};
 
 export function SalesSection({
   period,
@@ -36,6 +65,8 @@ export function SalesSection({
   const { data, isLoading } = useQuery(
     getSalesReportQueryOptions({ period, date }),
   );
+
+  console.log("data", data?.data);
 
   const items = normalizeSales(data);
   const max = Math.max(1, ...items.map((i) => Number(i.ventes || 0)));

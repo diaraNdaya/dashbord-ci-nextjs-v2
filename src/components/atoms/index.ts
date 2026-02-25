@@ -16,3 +16,6 @@ export { ProductStatsCard } from "./ProductStatsCard";
 
 // User Atoms
 export { UserStatsCard } from "./UserStatsCard";
+
+// Finance Atoms
+export { FinanceStatsCard } from "./FinanceStatsCard";

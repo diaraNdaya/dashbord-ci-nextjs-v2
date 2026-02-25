@@ -34,45 +34,99 @@ const emptyStats = (): DashboardStats => ({
 });
 
 const toStats = (raw: unknown): DashboardStats => {
+  // Handle the actual API response structure
+  if (raw && typeof raw === "object" && "data" in raw) {
+    const apiResponse = raw as {
+      data?: { statistics?: Array<Record<string, unknown>> };
+    };
+
+    if (
+      apiResponse.data?.statistics &&
+      Array.isArray(apiResponse.data.statistics)
+    ) {
+      const stats = emptyStats();
+
+      apiResponse.data.statistics.forEach(
+        (item: Record<string, unknown>, index: number) => {
+          const title = String(
+            item.title ?? item.label ?? item.name ?? "",
+          ).toLowerCase();
+          const value = Number(item.value ?? item.total ?? item.count ?? 0);
+
+          if (
+            title.includes("chiffre") ||
+            title.includes("affaires") ||
+            title.includes("revenue")
+          ) {
+            stats.totalRevenue = value;
+          } else if (
+            title.includes("client") ||
+            title.includes("user") ||
+            title.includes("utilisateur")
+          ) {
+            stats.totalUsers = value;
+          } else if (title.includes("vendeur") || title.includes("seller")) {
+            // For now, we'll use this as products count since we don't have a separate sellers stat
+            stats.totalProducts = value;
+          } else if (title.includes("commande") || title.includes("order")) {
+            stats.totalOrders = value;
+          }
+        },
+      );
+
+      return stats;
+    }
+  }
+
+  // Fallback to original logic
   const source = unwrapData(raw) as
     | DashboardStats
     | { statistics?: Array<Record<string, unknown>> };
 
-  if (source && typeof source === "object" && Array.isArray(source.statistics)) {
+  if (
+    source &&
+    typeof source === "object" &&
+    "statistics" in source &&
+    Array.isArray(source.statistics)
+  ) {
     const stats = emptyStats();
 
-    source.statistics.forEach((item, index) => {
-      const name = String(
-        item.label ?? item.name ?? item.key ?? item.title ?? "",
-      ).toLowerCase();
-      const value = Number(item.value ?? item.total ?? item.count ?? 0);
+    source.statistics.forEach(
+      (item: Record<string, unknown>, index: number) => {
+        const name = String(
+          item.label ?? item.name ?? item.key ?? item.title ?? "",
+        ).toLowerCase();
+        const value = Number(item.value ?? item.total ?? item.count ?? 0);
 
-      if (name.includes("user") || name.includes("utilisateur")) {
-        stats.totalUsers = value;
-        return;
-      }
-      if (name.includes("order") || name.includes("commande")) {
-        stats.totalOrders = value;
-        return;
-      }
-      if (
-        name.includes("revenue") ||
-        name.includes("chiffre") ||
-        name.includes("amount")
-      ) {
-        stats.totalRevenue = value;
-        return;
-      }
-      if (name.includes("product") || name.includes("produit")) {
-        stats.totalProducts = value;
-        return;
-      }
-
-      if (index === 0) stats.totalUsers = value;
-      if (index === 1) stats.totalOrders = value;
-      if (index === 2) stats.totalRevenue = value;
-      if (index === 3) stats.totalProducts = value;
-    });
+        if (
+          name.includes("user") ||
+          name.includes("utilisateur") ||
+          name.includes("client")
+        ) {
+          stats.totalUsers = value;
+        } else if (name.includes("order") || name.includes("commande")) {
+          stats.totalOrders = value;
+        } else if (
+          name.includes("revenue") ||
+          name.includes("chiffre") ||
+          name.includes("amount")
+        ) {
+          stats.totalRevenue = value;
+        } else if (
+          name.includes("product") ||
+          name.includes("produit") ||
+          name.includes("vendeur")
+        ) {
+          stats.totalProducts = value;
+        } else {
+          // Fallback to index-based mapping
+          if (index === 0) stats.totalRevenue = value;
+          if (index === 1) stats.totalUsers = value;
+          if (index === 2) stats.totalProducts = value;
+          if (index === 3) stats.totalOrders = value;
+        }
+      },
+    );
 
     return stats;
   }
@@ -91,7 +145,19 @@ const toStats = (raw: unknown): DashboardStats => {
 };
 
 const toMetrics = (raw: unknown): MetricsData => {
-  const source = unwrapData(raw) as { metrics?: MetricsData } & MetricsData;
+  if (raw && typeof raw === "object" && "data" in raw) {
+    const apiResponse = raw as { data?: { metrics?: Record<string, unknown> } };
+
+    if (apiResponse.data?.metrics) {
+      return apiResponse.data.metrics as MetricsData;
+    }
+  }
+
+  // Fallback to original logic
+  const source = unwrapData(raw) as {
+    metrics?: MetricsData;
+  } & MetricsData;
+
   return (source?.metrics ?? source ?? {}) as MetricsData;
 };
 
@@ -113,25 +179,25 @@ export function DashboardKpiRow() {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <KPIStatCard
         title="Revenus totaux"
-        value={`${Number(stats.totalRevenue || 0).toLocaleString("fr-FR")} FCFA`}
+        value={`${Number(stats.totalRevenue).toLocaleString()} FCFA`}
         trend={trend}
         icon={CreditCardIcon}
       />
       <KPIStatCard
         title="Utilisateurs"
-        value={stats.totalUsers || 0}
+        value={Number(stats.totalUsers).toLocaleString()}
         trend={trend}
         icon={UserMultiple02Icon}
       />
       <KPIStatCard
         title="Commandes"
-        value={stats.totalOrders || 0}
+        value={Number(stats.totalOrders).toLocaleString()}
         trend={trend}
         icon={ShoppingCart01Icon}
       />
       <KPIStatCard
-        title="Produits"
-        value={stats.totalProducts || 0}
+        title="Vendeurs"
+        value={Number(stats.totalProducts).toLocaleString()}
         trend={trend}
         icon={Package01Icon}
       />

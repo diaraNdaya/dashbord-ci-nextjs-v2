@@ -20,3 +20,7 @@ export { TopProductsTable } from "./TopProductsTable";
 
 // User Molecules
 export { UsersDataTable } from "./UsersDataTable";
+
+// Finance Organisms
+export { CommissionEvolutionChart } from "../organisms/CommissionEvolutionChart";
+export { PaymentMethodChart } from "../organisms/PaymentMethodChart";
