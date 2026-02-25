@@ -1,12 +1,7 @@
 import type { ApiError, ApiResponse } from "@/services/api.type";
 import { APIError } from "@/services/server/axios-server.server";
 
-export type ActionResult<T> =
-  | {
-      success: true;
-      data: ApiResponse<T>;
-    }
-  | { success: false; error: ApiError };
+export type ActionResult<T> = ApiResponse<T> | ApiError;
 
 export async function safeAction<T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -14,11 +9,11 @@ export async function safeAction<T>(
 ): Promise<ActionResult<T>> {
   try {
     const response = await fn();
-    return { success: true, data: response };
+    return response;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     if (err instanceof APIError) {
-      return { success: false, error: err.payload };
+      return err.payload;
     }
     const fallback: ApiError = {
       message: err?.message || "Erreur inattendue",
@@ -26,6 +21,6 @@ export async function safeAction<T>(
       errors: err,
     };
 
-    return { success: false, error: fallback };
+    return fallback;
   }
 }

@@ -148,8 +148,13 @@ export const endpoints = {
       page?: number,
       limit?: number,
       search?: string,
-    ) =>
-      `${BASE_URL}/admins/transactions?period=${period}&date=${date}&page=${page}&limit=${limit}&search=${search}`,
+    ) => {
+      let url = `${BASE_URL}/admins/transactions?period=${period}&date=${date}&page=${page}&limit=${limit}`;
+      if (search) {
+        url += `&search=${search}`;
+      }
+      return url;
+    },
   },
   DELIVERY: {
     createUserDelivery: `${BASE_URL_DELIVERY}/users`,

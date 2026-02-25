@@ -37,8 +37,8 @@ export default function OrdersTemplate() {
       activeTab === "all" ? undefined : activeTab,
     ),
   );
-
-  // Mutations
+  console.log("Active tab:", activeTab);
+  console.log("Fetched orders data:", ordersData?.totalItems);
   const deleteOrderMutation = useMutation({
     ...deleteOrderMutationOptions(),
     onSuccess: () => {
@@ -101,13 +101,6 @@ export default function OrdersTemplate() {
     return orders.length;
   })();
 
-  console.log("Pagination info:", {
-    page,
-    limit,
-    totalItems,
-    ordersCount: orders.length,
-  });
-
   const stats = {
     total: orders.length,
     pending: orders.filter((o: Order) => o.statut === "pending").length,
@@ -124,8 +117,6 @@ export default function OrdersTemplate() {
       0,
     ),
   };
-
-  console.log("Order statistics:", stats);
 
   return (
     <motion.div

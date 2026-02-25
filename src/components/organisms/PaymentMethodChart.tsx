@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatPrice } from "@/lib/utils";
+import { TransactionsApiResponse } from "@/services/actions/finances.actions";
 import { getTransactionsQueryOptions } from "@/services/queries/finances.queries";
 import {
   Calendar03Icon,
@@ -30,19 +32,33 @@ interface PaymentMethodChartProps {
   className?: string;
 }
 
-// Couleurs pour les méthodes de paiement
+// Type guard pour vérifier si c'est une réponse de transactions valide
+const isTransactionsResponse = (
+  result: unknown,
+): result is TransactionsApiResponse => {
+  return (
+    result !== null &&
+    typeof result === "object" &&
+    "data" in result &&
+    result.data !== null &&
+    typeof result.data === "object" &&
+    "data" in result.data &&
+    Array.isArray((result.data as any).data)
+  );
+};
+
 const colorByMethod: Record<string, string> = {
-  mobile_money: "var(--violet-vif)",
-  card: "var(--vert-menthe)",
-  cash: "var(--jaune-orange)",
-  bank_transfer: "var(--bleu-doux)",
+  mobile_money: "#8b5cf6", // violet
+  card: "#10b981", // vert
+  cash: "#f59e0b", // orange
+  bank_transfer: "#3b82f6", // bleu
 };
 
 export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
   const [period, setPeriod] = useState("month");
   const [date, setDate] = useState(getToday());
   const [page] = useState(1);
-  const [limit] = useState(1000); // Grande limite pour avoir toutes les transactions
+  const [limit] = useState(1000);
 
   const {
     data: transactionsData,
@@ -51,11 +67,17 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     refetch,
   } = useQuery(getTransactionsQueryOptions(period, date, page, limit));
 
-  // Analyser les méthodes de paiement
   const paymentAnalysis = useMemo(() => {
-    const transactions = transactionsData?.data || [];
+    // Vérifier si nous avons des données valides
+    if (!isTransactionsResponse(transactionsData)) {
+      return {
+        data: [],
+        totalTransactions: 0,
+        totalAmount: 0,
+      };
+    }
 
-    console.log("transactions", transactionsData);
+    const transactions = transactionsData.data.data;
 
     if (!Array.isArray(transactions) || transactions.length === 0) {
       return {
@@ -68,8 +90,8 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     const methodGroups: Record<string, { count: number; amount: number }> = {};
     let totalAmount = 0;
 
-    transactions.forEach((transaction: any) => {
-      const method = transaction.payment_method || transaction.method || "card";
+    transactions.forEach((transaction) => {
+      const method = transaction.payment_method || "card";
       const amount = Number(transaction.amount || 0);
 
       if (!methodGroups[method]) {
@@ -81,7 +103,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
       totalAmount += amount;
     });
 
-    // Convertir en array avec pourcentages
     const data = Object.entries(methodGroups).map(([method, stats]) => ({
       method,
       count: stats.count,
@@ -96,14 +117,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
       totalAmount,
     };
   }, [transactionsData]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "XOF",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getPeriodLabel = (p: string): string => {
     switch (p) {
@@ -170,10 +183,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     );
   }
 
-  // Vérifier s'il n'y a qu'une seule méthode
-  const nonZeroMethods = paymentAnalysis.data.filter((d) => d.count > 0);
-  const onlyOneMethod = nonZeroMethods.length === 1;
-
   return (
     <Card className={className}>
       <CardHeader className="space-y-4">
@@ -187,7 +196,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
             </p>
           </div>
 
-          {/* Filtres */}
           <div className="flex flex-col sm:flex-row gap-2">
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-full sm:w-[140px]">
@@ -223,12 +231,12 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-gradient-to-r from-bleu-doux/10 to-bleu-doux/20 p-4 rounded-lg border border-bleu-doux/20"
+              className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800"
             >
-              <p className="text-sm font-medium text-bleu-doux">
+              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
                 Total des transactions
               </p>
-              <p className="text-2xl font-bold text-bleu-doux">
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {paymentAnalysis.totalTransactions.toLocaleString("fr-FR")}
               </p>
             </motion.div>
@@ -237,13 +245,13 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-gradient-to-r from-vert-menthe/10 to-vert-menthe/20 p-4 rounded-lg border border-vert-menthe/20"
+              className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800"
             >
-              <p className="text-sm font-medium text-vert-menthe">
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">
                 Montant total
               </p>
-              <p className="text-2xl font-bold text-vert-menthe">
-                {formatCurrency(paymentAnalysis.totalAmount)}
+              <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                {formatPrice(paymentAnalysis.totalAmount)}
               </p>
             </motion.div>
 
@@ -251,12 +259,12 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.2 }}
-              className="bg-gradient-to-r from-violet-vif/10 to-violet-vif/20 p-4 rounded-lg border border-violet-vif/20"
+              className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800"
             >
-              <p className="text-sm font-medium text-violet-vif">
+              <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
                 Méthodes utilisées
               </p>
-              <p className="text-2xl font-bold text-violet-vif">
+              <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                 {paymentAnalysis.data.length}
               </p>
             </motion.div>
@@ -276,90 +284,121 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
           </div>
         ) : paymentAnalysis.data.length > 0 ? (
           <div className="space-y-6">
-            {/* Graphique en donut simple */}
+            {/* Graphique en donut avec Chart.js ou version simplifiée */}
             <div className="flex items-center justify-center">
               <div className="relative w-80 h-80">
-                <svg viewBox="0 0 200 200" className="w-full h-full">
-                  {paymentAnalysis.data.map((item, index) => {
-                    const total = paymentAnalysis.data.reduce(
-                      (sum, d) => sum + d.count,
-                      0,
-                    );
-                    const percentage = (item.count / total) * 100;
-                    const angle = (percentage / 100) * 360;
+                {paymentAnalysis.data.length === 1 ? (
+                  <svg viewBox="0 0 200 200" className="w-full h-full">
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="60"
+                      fill="none"
+                      stroke={paymentAnalysis.data[0].color}
+                      strokeWidth="30"
+                      className="opacity-80"
+                    />
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="25"
+                      fill="hsl(var(--background))"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="2"
+                    />
+                    <foreignObject x="85" y="85" width="30" height="30">
+                      <div className="flex items-center justify-center w-full h-full">
+                        <HugeiconsIcon
+                          icon={PieChartIcon}
+                          className="h-6 w-6 text-muted-foreground"
+                        />
+                      </div>
+                    </foreignObject>
+                  </svg>
+                ) : (
+                  // Cas normal : plusieurs méthodes de paiement
+                  <svg viewBox="0 0 200 200" className="w-full h-full">
+                    {paymentAnalysis.data.map((item, index) => {
+                      const total = paymentAnalysis.totalTransactions;
+                      const percentage = (item.count / total) * 100;
 
-                    // Calculer les positions pour le segment
-                    const startAngle = paymentAnalysis.data
-                      .slice(0, index)
-                      .reduce((sum, d) => sum + (d.count / total) * 360, 0);
+                      // Calculer l'angle de départ (cumul des segments précédents)
+                      const previousPercentage = paymentAnalysis.data
+                        .slice(0, index)
+                        .reduce((sum, d) => sum + (d.count / total) * 100, 0);
 
-                    const endAngle = startAngle + angle;
-                    const largeArcFlag = angle > 180 ? 1 : 0;
+                      const startAngle = (previousPercentage / 100) * 360 - 90; // -90 pour commencer en haut
+                      const endAngle =
+                        ((previousPercentage + percentage) / 100) * 360 - 90;
 
-                    const startX =
-                      100 + 60 * Math.cos(((startAngle - 90) * Math.PI) / 180);
-                    const startY =
-                      100 + 60 * Math.sin(((startAngle - 90) * Math.PI) / 180);
-                    const endX =
-                      100 + 60 * Math.cos(((endAngle - 90) * Math.PI) / 180);
-                    const endY =
-                      100 + 60 * Math.sin(((endAngle - 90) * Math.PI) / 180);
+                      const largeArcFlag = percentage > 50 ? 1 : 0;
 
-                    const innerStartX =
-                      100 + 30 * Math.cos(((startAngle - 90) * Math.PI) / 180);
-                    const innerStartY =
-                      100 + 30 * Math.sin(((startAngle - 90) * Math.PI) / 180);
-                    const innerEndX =
-                      100 + 30 * Math.cos(((endAngle - 90) * Math.PI) / 180);
-                    const innerEndY =
-                      100 + 30 * Math.sin(((endAngle - 90) * Math.PI) / 180);
+                      // Coordonnées du cercle extérieur
+                      const x1 =
+                        100 + 60 * Math.cos((startAngle * Math.PI) / 180);
+                      const y1 =
+                        100 + 60 * Math.sin((startAngle * Math.PI) / 180);
+                      const x2 =
+                        100 + 60 * Math.cos((endAngle * Math.PI) / 180);
+                      const y2 =
+                        100 + 60 * Math.sin((endAngle * Math.PI) / 180);
 
-                    const pathData = [
-                      `M ${startX} ${startY}`,
-                      `A 60 60 0 ${largeArcFlag} 1 ${endX} ${endY}`,
-                      `L ${innerEndX} ${innerEndY}`,
-                      `A 30 30 0 ${largeArcFlag} 0 ${innerStartX} ${innerStartY}`,
-                      "Z",
-                    ].join(" ");
+                      // Coordonnées du cercle intérieur
+                      const x3 =
+                        100 + 30 * Math.cos((endAngle * Math.PI) / 180);
+                      const y3 =
+                        100 + 30 * Math.sin((endAngle * Math.PI) / 180);
+                      const x4 =
+                        100 + 30 * Math.cos((startAngle * Math.PI) / 180);
+                      const y4 =
+                        100 + 30 * Math.sin((startAngle * Math.PI) / 180);
 
-                    return (
-                      <motion.path
-                        key={item.method}
-                        d={pathData}
-                        fill={item.color}
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        className="hover:opacity-80 cursor-pointer"
-                        style={{
-                          filter: onlyOneMethod
-                            ? "none"
-                            : `drop-shadow(0 0 ${index === 0 ? "8px" : "4px"} rgba(0,0,0,0.1))`,
-                        }}
-                      />
-                    );
-                  })}
+                      const pathData = [
+                        `M ${x1} ${y1}`,
+                        `A 60 60 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                        `L ${x3} ${y3}`,
+                        `A 30 30 0 ${largeArcFlag} 0 ${x4} ${y4}`,
+                        "Z",
+                      ].join(" ");
 
-                  {/* Centre du donut */}
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="25"
-                    fill="var(--background)"
-                    stroke="var(--border)"
-                    strokeWidth="2"
-                  />
+                      return (
+                        <motion.path
+                          key={item.method}
+                          d={pathData}
+                          fill={item.color}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 0.8, scale: 1 }}
+                          whileHover={{ opacity: 1, scale: 1.02 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="cursor-pointer"
+                          style={{
+                            filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+                          }}
+                        />
+                      );
+                    })}
 
-                  {/* Icône au centre */}
-                  <foreignObject x="85" y="85" width="30" height="30">
-                    <div className="flex items-center justify-center w-full h-full">
-                      <HugeiconsIcon
-                        icon={PieChartIcon}
-                        className="h-6 w-6 text-muted-foreground"
-                      />
-                    </div>
-                  </foreignObject>
-                </svg>
+                    {/* Centre du donut */}
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="25"
+                      fill="hsl(var(--background))"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="2"
+                    />
+
+                    {/* Icône au centre */}
+                    <foreignObject x="85" y="85" width="30" height="30">
+                      <div className="flex items-center justify-center w-full h-full">
+                        <HugeiconsIcon
+                          icon={PieChartIcon}
+                          className="h-6 w-6 text-muted-foreground"
+                        />
+                      </div>
+                    </foreignObject>
+                  </svg>
+                )}
               </div>
             </div>
 
@@ -396,7 +435,7 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
                       {item.count} transaction{item.count > 1 ? "s" : ""}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatCurrency(item.amount)}
+                      {formatPrice(item.amount)}
                     </div>
                   </div>
                 </motion.div>

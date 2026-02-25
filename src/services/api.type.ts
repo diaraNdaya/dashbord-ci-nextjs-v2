@@ -19,7 +19,6 @@ export interface ApiError {
   success?: boolean;
   status: number | boolean;
   code?: string;
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   errors?: any;
 }

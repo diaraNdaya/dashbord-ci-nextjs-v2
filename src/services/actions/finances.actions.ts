@@ -4,52 +4,33 @@ import { serverRequest } from "@/services/server/axios-server.server";
 import { safeAction } from "@/services/server/safe-action.server";
 import { endpoints } from "../endpoints";
 
-// Types pour les réponses financières
-interface CommissionGlobaleResponse {
-  success: boolean;
-  message: string;
-  data: {
-    commission: number;
-    tva?: number;
-    total?: number;
-  };
+// Types pour les données financières (sans wrapper de réponse)
+interface CommissionGlobaleData {
+  commission: number;
+  tva?: number;
+  total?: number;
 }
 
-interface TransactionsResponse {
+export interface TransactionsApiResponse {
   success: boolean;
   message: string;
   data: {
-    transactions: Array<{
-      id: string;
-      amount: number;
-      type: string;
-      status: string;
-      createdAt: string;
-      user?: {
-        name: string;
-        email: string;
-      };
-    }>;
+    success: boolean;
+    data: Transaction[];
     totalItems: number;
-    totalPages: number;
     page: number;
     limit: number;
+    totalPages: number;
   };
 }
 
-interface CommissionEvolutionResponse {
-  success: boolean;
-  message: string;
-  data: Array<{
-    date: string;
-    commission: number;
-    transactions: number;
-  }>;
+interface CommissionEvolutionData {
+  date: string;
+  commission: number;
+  transactions: number;
 }
 
-interface CommissionSellersResponse {
-  success: boolean;
-  message: string;
+interface CommissionSellersData {
   data: Array<{
     id: string;
     seller_name: string;
@@ -64,10 +45,62 @@ interface CommissionSellersResponse {
   limit: number;
 }
 
-// Actions pour récupérer les données financières
+export interface Transaction {
+  id: string;
+  orders_id: string;
+  customer_id: string;
+  payment_method: string;
+  amount: number;
+  payment_status: string;
+  provider: string;
+  currency: string;
+  payment_date: string;
+  paymentStripeId: string;
+  stripeCustomerId: string;
+  paidAt: string;
+  phonePaid: string;
+  paymentIntentId: string;
+  failureReason: string;
+  createdAt: string;
+  reference: string;
+  operator: string;
+  transactionId: string;
+  updatedAt: string;
+  customer: Customer;
+  Orders: Order[];
+}
+
+interface Order {
+  id: string;
+  customer_Id: string;
+  orderDate: string;
+  statut: string;
+  payment_Id: string;
+  shippingMethodId: string;
+  shippingMethod: string;
+  shippingDate: string;
+  quantity: number;
+  totalAmount: number;
+  address_id: string;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+  userId?: string | null;
+}
+
+interface Customer {
+  id: string;
+  user_id: string;
+  address: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  isVerified: boolean;
+}
+
 export async function getCommissionGlobaleAction() {
-  return safeAction<CommissionGlobaleResponse>(async () => {
-    return serverRequest<CommissionGlobaleResponse>(
+  return safeAction<CommissionGlobaleData>(async () => {
+    return serverRequest<CommissionGlobaleData>(
       endpoints.DASHBOARD.getCommissionGlobale(),
       {
         method: "GET",
@@ -83,9 +116,9 @@ export async function getTransactionsAction(
   limit: number,
   search?: string,
 ) {
-  return safeAction<TransactionsResponse>(async () => {
-    return serverRequest<TransactionsResponse>(
-      endpoints.DASHBOARD.getTransactions(period, date, page, limit, search),
+  return safeAction<TransactionsApiResponse>(async () => {
+    return serverRequest<TransactionsApiResponse>(
+      endpoints.PAYMENT.allPayment(period, date, page, limit, search),
       {
         method: "GET",
       },
@@ -97,8 +130,8 @@ export async function getCommissionEvolutionAction(
   period: string,
   date: string,
 ) {
-  return safeAction<CommissionEvolutionResponse>(async () => {
-    return serverRequest<CommissionEvolutionResponse>(
+  return safeAction<CommissionEvolutionData[]>(async () => {
+    return serverRequest<CommissionEvolutionData[]>(
       endpoints.DASHBOARD.getCommissionEvolution(period, date),
       {
         method: "GET",
@@ -108,8 +141,8 @@ export async function getCommissionEvolutionAction(
 }
 
 export async function getCommissionSellersAction(page: number, limit: number) {
-  return safeAction<CommissionSellersResponse>(async () => {
-    return serverRequest<CommissionSellersResponse>(
+  return safeAction<CommissionSellersData>(async () => {
+    return serverRequest<CommissionSellersData>(
       endpoints.DASHBOARD.getCommissionsSellers(page, limit),
       {
         method: "GET",
@@ -123,8 +156,8 @@ export async function getCommissionSellerByIdAction(
   page: number,
   limit: number,
 ) {
-  return safeAction<CommissionSellersResponse>(async () => {
-    return serverRequest<CommissionSellersResponse>(
+  return safeAction<CommissionSellersData>(async () => {
+    return serverRequest<CommissionSellersData>(
       endpoints.DASHBOARD.getCommissionsSellersById(id, page, limit),
       {
         method: "GET",

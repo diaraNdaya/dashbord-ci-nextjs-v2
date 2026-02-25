@@ -4,6 +4,7 @@ import { FinanceStatsCard } from "@/components/atoms/FinanceStatsCard";
 import { LoadingSkeleton } from "@/components/atoms/LoadingSkeleton";
 import { CommissionEvolutionChart } from "@/components/organisms/CommissionEvolutionChart";
 import { PaymentMethodChart } from "@/components/organisms/PaymentMethodChart";
+import TransactionsTable from "@/components/organisms/TransactionsTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TransactionsApiResponse } from "@/services/actions/finances.actions";
 import { getDashboardDataQueryOptions } from "@/services/queries/dashboard.queries";
 import {
   getCommissionGlobaleQueryOptions,
@@ -22,7 +24,6 @@ import {
 } from "@/services/queries/finances.queries";
 import {
   CreditCardIcon,
-  ExchangeIcon,
   MoneyBag02Icon,
   PercentIcon,
   ShoppingCart01Icon,
@@ -35,12 +36,34 @@ import { useMemo, useState } from "react";
 
 const getToday = () => new Date().toISOString().slice(0, 10);
 
+// Type guard pour vérifier si le résultat est une erreur
+const isApiError = (
+  result: any,
+): result is import("@/services/api.type").ApiError => {
+  return (
+    result && "message" in result && "status" in result && !("data" in result)
+  );
+};
+
+// Type guard pour vérifier si c'est une réponse de transactions valide
+const isTransactionsResponse = (
+  result: any,
+): result is TransactionsApiResponse => {
+  return (
+    result &&
+    "data" in result &&
+    result.data &&
+    "data" in result.data &&
+    Array.isArray(result.data.data)
+  );
+};
+
 export default function FinancesTemplate() {
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState("month");
   const [date, setDate] = useState(getToday());
-  const [page] = useState(1);
-  const [limit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const { data: commissionData, isLoading: isLoadingCommission } = useQuery(
     getCommissionGlobaleQueryOptions(),
@@ -49,7 +72,10 @@ export default function FinancesTemplate() {
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery(
     getTransactionsQueryOptions(period, date, page, limit),
   );
-
+  console.log(
+    "DataTransactions",
+    !isApiError(transactionsData) ? transactionsData?.data?.data : "Error",
+  );
   const { data: sellersCommissionData, isLoading: isLoadingSellers } = useQuery(
     getCommissionSellersQueryOptions(page, limit),
   );
@@ -60,9 +86,19 @@ export default function FinancesTemplate() {
     await queryClient.invalidateQueries({ queryKey: ["finances"] });
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
   const stats = useMemo(() => {
-    const commission = commissionData?.data?.data.commission || 0;
-    const tva = commissionData?.data?.data.tva || 0;
+    const commission =
+      (!isApiError(commissionData) && commissionData?.data?.commission) || 0;
+    const tva = (!isApiError(commissionData) && commissionData?.data?.tva) || 0;
 
     let totalRevenue = 0;
     let totalClients = 0;
@@ -222,78 +258,43 @@ export default function FinancesTemplate() {
           </motion.div>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-1">
           <CommissionEvolutionChart />
           <PaymentMethodChart />
         </div>
 
-        {/* Additional Section */}
-        <div className="grid gap-6 xl:grid-cols-2">
-          {/* Recent Transactions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>Transactions récentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoadingTransactions ? (
-                  <LoadingSkeleton rows={5} />
-                ) : (transactionsData as any)?.data?.transactions &&
-                  Array.isArray((transactionsData as any).data.transactions) &&
-                  (transactionsData as any).data.transactions.length > 0 ? (
-                  <div className="space-y-3">
-                    {(transactionsData as any).data.transactions
-                      .slice(0, 5)
-                      .map((transaction: any) => (
-                        <div
-                          key={transaction.id}
-                          className="flex items-center justify-between p-3 rounded-lg border"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-violet-vif/10 flex items-center justify-center">
-                              <HugeiconsIcon
-                                icon={ExchangeIcon}
-                                className="h-4 w-4 text-violet-vif"
-                              />
-                            </div>
-                            <div>
-                              <p className="font-medium">
-                                {transaction.user?.name ||
-                                  "Utilisateur inconnu"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {transaction.type} • {transaction.status}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold">
-                              {formatCurrency(transaction.amount)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(
-                                transaction.createdAt,
-                              ).toLocaleDateString("fr-FR")}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="flex h-32 items-center justify-center text-muted-foreground">
-                    Aucune transaction récente
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+        {/* Tableau des transactions avec pagination */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isTransactionsResponse(transactionsData) ? (
+                <TransactionsTable
+                  transactions={transactionsData.data.data}
+                  totalItems={transactionsData.data.totalItems}
+                  currentPage={page}
+                  limit={limit}
+                  onPageChange={handlePageChange}
+                  onLimitChange={handleLimitChange}
+                  isLoading={isLoadingTransactions}
+                />
+              ) : (
+                <div className="flex h-32 items-center justify-center text-muted-foreground">
+                  {isLoadingTransactions
+                    ? "Chargement..."
+                    : "Aucune transaction disponible"}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        {/* Top Sellers Commissions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -306,40 +307,39 @@ export default function FinancesTemplate() {
             <CardContent>
               {isLoadingSellers ? (
                 <LoadingSkeleton rows={6} />
-              ) : (sellersCommissionData as any)?.data &&
-                Array.isArray((sellersCommissionData as any).data) &&
-                (sellersCommissionData as any).data.length > 0 ? (
+              ) : !isApiError(sellersCommissionData) &&
+                sellersCommissionData?.data &&
+                Array.isArray(sellersCommissionData.data) &&
+                sellersCommissionData.data.length > 0 ? (
                 <div className="space-y-3">
-                  {(sellersCommissionData as any).data
-                    .slice(0, 8)
-                    .map((seller: any) => (
-                      <div
-                        key={seller.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-bleu-doux/10 flex items-center justify-center">
-                            <span className="font-semibold text-bleu-doux">
-                              {seller.seller_name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium">{seller.seller_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Taux: {seller.commission_rate}%
-                            </p>
-                          </div>
+                  {sellersCommissionData.data.slice(0, 8).map((seller: any) => (
+                    <div
+                      key={seller.id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-bleu-doux/10 flex items-center justify-center">
+                          <span className="font-semibold text-bleu-doux">
+                            {seller.seller_name.charAt(0).toUpperCase()}
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            {formatCurrency(seller.commission_amount)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Ventes: {formatCurrency(seller.total_sales)}
+                        <div>
+                          <p className="font-medium">{seller.seller_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Taux: {seller.commission_rate}%
                           </p>
                         </div>
                       </div>
-                    ))}
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {formatCurrency(seller.commission_amount)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Ventes: {formatCurrency(seller.total_sales)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="flex h-32 items-center justify-center text-muted-foreground">

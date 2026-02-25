@@ -40,8 +40,6 @@ export function CommissionEvolutionChart({
     error,
     refetch,
   } = useQuery(getCommissionEvolutionQueryOptions(period, date));
-  console.log("evolutionData", evolutionData?.data.data);
-  // Transform data for chart
   const chartData = useMemo(() => {
     if (!evolutionData?.data.data || !Array.isArray(evolutionData.data.data)) {
       return [];

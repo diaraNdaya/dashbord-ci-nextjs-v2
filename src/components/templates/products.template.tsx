@@ -137,7 +137,6 @@ export default function ProductsTemplate() {
     return currentProducts.length;
   })();
 
-  // Filter products based on search and tab
   const filteredProducts = currentProducts.filter((product) => {
     const matchesSearch =
       searchQuery === "" ||
@@ -160,7 +159,6 @@ export default function ProductsTemplate() {
     return matchesSearch && matchesTab;
   });
 
-  // Calculate stats - using the old stats format
   const stats = {
     total: allProducts.length,
     inStock: allProducts.filter((p) => p.stockQuantity > 0).length,
@@ -171,7 +169,7 @@ export default function ProductsTemplate() {
     categories: [
       ...new Set(allProducts.map((p) => p.categories?.name).filter(Boolean)),
     ].length,
-    topProducts: topProducts.length, // Add top products count to stats
+    topProducts: topProducts.length,
   };
 
   return (
@@ -182,7 +180,6 @@ export default function ProductsTemplate() {
       transition={{ duration: 0.6 }}
     >
       <div className="@container/main flex flex-1 flex-col gap-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -205,7 +202,6 @@ export default function ProductsTemplate() {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -266,7 +262,6 @@ export default function ProductsTemplate() {
           </div>
         </motion.div>
 
-        {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

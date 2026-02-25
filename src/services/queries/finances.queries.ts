@@ -10,17 +10,12 @@ import {
 export const getCommissionGlobaleQueryOptions = () => ({
   queryKey: ["finances", "commission", "globale"] as const,
   queryFn: async () => {
-    console.log("[finances][commission][globale] query start");
     const result = await getCommissionGlobaleAction();
     if (result.success) {
-      console.log(
-        "[finances][commission][globale] query success:",
-        result.data,
-      );
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération de la commission globale",
     );
   },
@@ -44,13 +39,6 @@ export const getTransactionsQueryOptions = (
     search,
   ] as const,
   queryFn: async () => {
-    console.log("[finances][transactions] query start:", {
-      period,
-      date,
-      page,
-      limit,
-      search,
-    });
     const result = await getTransactionsAction(
       period,
       date,
@@ -58,12 +46,12 @@ export const getTransactionsQueryOptions = (
       limit,
       search,
     );
+    console.log("Transactions data", result);
     if (result.success) {
-      console.log("[finances][transactions] query success:", result.data);
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des transactions",
+      result.message || "Erreur lors de la récupération des transactions",
     );
   },
 });
@@ -75,20 +63,12 @@ export const getCommissionEvolutionQueryOptions = (
 ) => ({
   queryKey: ["finances", "commission", "evolution", period, date] as const,
   queryFn: async () => {
-    console.log("[finances][commission][evolution] query start:", {
-      period,
-      date,
-    });
     const result = await getCommissionEvolutionAction(period, date);
     if (result.success) {
-      console.log(
-        "[finances][commission][evolution] query success:",
-        result.data,
-      );
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération de l'évolution des commissions",
     );
   },
@@ -101,20 +81,12 @@ export const getCommissionSellersQueryOptions = (
 ) => ({
   queryKey: ["finances", "commission", "sellers", page, limit] as const,
   queryFn: async () => {
-    console.log("[finances][commission][sellers] query start:", {
-      page,
-      limit,
-    });
     const result = await getCommissionSellersAction(page, limit);
     if (result.success) {
-      console.log(
-        "[finances][commission][sellers] query success:",
-        result.data,
-      );
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération des commissions des vendeurs",
     );
   },
@@ -128,18 +100,12 @@ export const getCommissionSellerByIdQueryOptions = (
 ) => ({
   queryKey: ["finances", "commission", "seller", id, page, limit] as const,
   queryFn: async () => {
-    console.log("[finances][commission][seller] query start:", {
-      id,
-      page,
-      limit,
-    });
     const result = await getCommissionSellerByIdAction(id, page, limit);
     if (result.success) {
-      console.log("[finances][commission][seller] query success:", result.data);
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération des commissions du vendeur",
     );
   },

@@ -12,7 +12,6 @@ export const fetchOrdersQueryOptions = (
 ) => ({
   queryKey: ["orders", page, limit, statut] as const,
   queryFn: async () => {
-    console.log("produits", page, limit, statut);
     const result = await fetchOrdersAction(page, limit, statut);
 
     if (result.success) {

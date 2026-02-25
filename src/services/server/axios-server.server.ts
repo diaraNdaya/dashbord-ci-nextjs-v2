@@ -67,10 +67,5 @@ export async function serverRequest<T>(
   }
 
   // Encapsuler la réponse dans le format ApiResponse
-  return {
-    data: body as T,
-    status: res.status,
-    success: true,
-    message: "Succès",
-  };
+  return body;
 }
