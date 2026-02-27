@@ -4,13 +4,13 @@ import { ApiResponse } from "@/services/api.type";
 export interface Category {
   id: string;
   name: string;
-  description: string;
   url: string;
-  images: string[];
-  slug: string;
   type: string;
+  description: string;
   createdAt: string;
   updatedAt: string;
+  productCount: number;
+  images: string[];
 }
 
 // Interface pour une sous-catégorie
@@ -87,6 +87,10 @@ export interface SubcategorySearchParams {
   search?: string;
 }
 
+export interface CategorySearchParams {
+  search?: string;
+}
+
 // Type pour les réponses de création
 export interface CategoryCreateResponse extends ApiResponse<{ id: string }> {}
 
@@ -96,4 +100,10 @@ export interface CategoryDeleteResponse extends ApiResponse<unknown> {}
 // Type pour l'upload de fichiers
 export interface FileUploadResponse {
   url: string;
+}
+
+export interface CategoryFormProps {
+  category?: Category | null;
+  onClose: () => void;
+  onSuccess?: () => void;
 }

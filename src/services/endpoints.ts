@@ -98,7 +98,6 @@ export const endpoints = {
     getCommissionGlobale: () => `${BASE_URL}/admins/commission-globale`,
     getCountCommissionSellers: () => `${BASE_URL}/admins/commission-globale`,
     createCommission: () => `${BASE_URL}/admins/commission`,
-    updateCommission: () => `${BASE_URL}/admins/commission`,
     deleteCommission: (id: string) => `${BASE_URL}/admins/commission/${id}`,
     configCommission: () => `${BASE_URL}/admins/commission`,
     getCommissionEvolution: (period: string, date: string) =>
@@ -117,8 +116,14 @@ export const endpoints = {
       `${BASE_URL}/admins/users-blocked?page=${page}&limit=${limit}`,
   },
   CATEGORY: {
-    allCategory: (page?: number, limit?: number) =>
-      `${BASE_URL}/categories/all?page=${page}&limit=${limit}`,
+    allCategory: (page?: number, limit?: number, search?: string) => {
+      const params = new URLSearchParams();
+      if (page !== undefined) params.append("page", page.toString());
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (search && search.trim() !== "")
+        params.append("search", search.trim());
+      return `${BASE_URL}/categories/all?${params.toString()}`;
+    },
     createCategory: () => `${BASE_URL}/categories`,
     deleteCategorie: (id: string) => `${BASE_URL}/categories/${id}`,
     deleteSubcategory: (id: string) =>

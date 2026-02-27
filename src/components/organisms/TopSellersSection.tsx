@@ -74,8 +74,8 @@ export function TopSellersSection({ period, date }: TopSellersSectionProps) {
         {!isLoading && items.length > 0 ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              {items.slice(0, 5).map((item) => (
-                <div key={item.id} className="space-y-1">
+              {items.slice(0, 5).map((item, index) => (
+                <div key={item.id || `seller-${index}`} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span>{item.name}</span>
                     <span>

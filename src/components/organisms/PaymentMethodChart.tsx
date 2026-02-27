@@ -43,7 +43,7 @@ const isTransactionsResponse = (
     result.data !== null &&
     typeof result.data === "object" &&
     "data" in result.data &&
-    Array.isArray((result.data as any).data)
+    Array.isArray((result.data as { data: unknown[] }).data)
   );
 };
 
@@ -70,6 +70,7 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
   const paymentAnalysis = useMemo(() => {
     // Vérifier si nous avons des données valides
     if (!isTransactionsResponse(transactionsData)) {
+      console.log("No valid transactions response");
       return {
         data: [],
         totalTransactions: 0,
@@ -78,8 +79,10 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     }
 
     const transactions = transactionsData.data.data;
+    console.log("transactions array:", transactions);
 
     if (!Array.isArray(transactions) || transactions.length === 0) {
+      console.log("No transactions array or empty");
       return {
         data: [],
         totalTransactions: 0,
@@ -90,7 +93,9 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     const methodGroups: Record<string, { count: number; amount: number }> = {};
     let totalAmount = 0;
 
-    transactions.forEach((transaction) => {
+    console.log("Processing transactions:", transactions);
+    transactions.forEach((transaction, index) => {
+      console.log(`Transaction ${index}:`, transaction);
       const method = transaction.payment_method || "card";
       const amount = Number(transaction.amount || 0);
 
@@ -103,6 +108,8 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
       totalAmount += amount;
     });
 
+    console.log("Method groups:", methodGroups);
+
     const data = Object.entries(methodGroups).map(([method, stats]) => ({
       method,
       count: stats.count,
@@ -110,6 +117,8 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
       percentage: (stats.count / transactions.length) * 100,
       color: colorByMethod[method] || colorByMethod.card,
     }));
+
+    console.log("Final payment analysis data:", data);
 
     return {
       data,
@@ -159,7 +168,7 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
         return "Espèces";
       case "bank_transfer":
       case "virement":
-        return "Virement";
+        return "Virement bancaire";
       case "card":
       case "carte":
         return "Carte bancaire";

@@ -2,9 +2,9 @@
 
 import { FinanceStatsCard } from "@/components/atoms/FinanceStatsCard";
 import { LoadingSkeleton } from "@/components/atoms/LoadingSkeleton";
+import { TransactionsDataTable } from "@/components/molecules/TransactionsDataTable";
 import { CommissionEvolutionChart } from "@/components/organisms/CommissionEvolutionChart";
 import { PaymentMethodChart } from "@/components/organisms/PaymentMethodChart";
-import TransactionsTable from "@/components/organisms/TransactionsTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TransactionsApiResponse } from "@/services/actions/finances.actions";
 import { getDashboardDataQueryOptions } from "@/services/queries/dashboard.queries";
 import {
   getCommissionGlobaleQueryOptions,
@@ -36,28 +35,6 @@ import { useMemo, useState } from "react";
 
 const getToday = () => new Date().toISOString().slice(0, 10);
 
-// Type guard pour vérifier si le résultat est une erreur
-const isApiError = (
-  result: any,
-): result is import("@/services/api.type").ApiError => {
-  return (
-    result && "message" in result && "status" in result && !("data" in result)
-  );
-};
-
-// Type guard pour vérifier si c'est une réponse de transactions valide
-const isTransactionsResponse = (
-  result: any,
-): result is TransactionsApiResponse => {
-  return (
-    result &&
-    "data" in result &&
-    result.data &&
-    "data" in result.data &&
-    Array.isArray(result.data.data)
-  );
-};
-
 export default function FinancesTemplate() {
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState("month");
@@ -69,13 +46,12 @@ export default function FinancesTemplate() {
     getCommissionGlobaleQueryOptions(),
   );
 
+  console.log("commissionData", commissionData);
+
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery(
     getTransactionsQueryOptions(period, date, page, limit),
   );
-  console.log(
-    "DataTransactions",
-    !isApiError(transactionsData) ? transactionsData?.data?.data : "Error",
-  );
+
   const { data: sellersCommissionData, isLoading: isLoadingSellers } = useQuery(
     getCommissionSellersQueryOptions(page, limit),
   );
@@ -86,42 +62,45 @@ export default function FinancesTemplate() {
     await queryClient.invalidateQueries({ queryKey: ["finances"] });
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleLimitChange = (newLimit: number) => {
-    setLimit(newLimit);
-    setPage(1); // Reset to first page when changing limit
-  };
-
   const stats = useMemo(() => {
-    const commission =
-      (!isApiError(commissionData) && commissionData?.data?.commission) || 0;
-    const tva = (!isApiError(commissionData) && commissionData?.data?.tva) || 0;
+    const commission = (commissionData as any)?.data?.commission || 0;
+    const tva = (commissionData as any)?.data?.tva || 0;
 
     let totalRevenue = 0;
     let totalClients = 0;
     let totalOrders = 0;
 
-    const dashboardStats = dashboardData?.data?.statistics;
+    const dashboardStats = dashboardData?.statistics;
+    console.log("dashboardStats", dashboardStats);
     if (dashboardStats && Array.isArray(dashboardStats)) {
+      // Chercher le chiffre d'affaires
       const revenueStats = dashboardStats.find(
         (stat: any) =>
-          stat.title?.toLowerCase().includes("chiffre") ||
+          stat.title?.toLowerCase().includes("chiffre") &&
           stat.title?.toLowerCase().includes("affaires"),
       );
       totalRevenue = Number(revenueStats?.value || 0);
+
       const clientStats = dashboardStats.find((stat: any) =>
-        stat.title?.toLowerCase().includes("client"),
+        stat.title?.toLowerCase().includes("clients"),
       );
       totalClients = Number(clientStats?.value || 0);
 
+      // Chercher le nombre de commandes
       const orderStats = dashboardStats.find((stat: any) =>
-        stat.title?.toLowerCase().includes("commande"),
+        stat.title?.toLowerCase().includes("commandes"),
       );
       totalOrders = Number(orderStats?.value || 0);
+
+      console.log("Found stats:", { revenueStats, clientStats, orderStats });
     }
+
+    console.log("Final calculated stats:", {
+      totalRevenue,
+      totalClients,
+      totalOrders,
+      totalCommissions: commission + tva,
+    });
 
     return {
       totalRevenue,
@@ -258,12 +237,12 @@ export default function FinancesTemplate() {
           </motion.div>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-1">
+        <div className="grid gap-6 xl:grid-cols-2">
           <CommissionEvolutionChart />
           <PaymentMethodChart />
         </div>
 
-        {/* Tableau des transactions avec pagination */}
+        {/* Transactions Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -274,27 +253,31 @@ export default function FinancesTemplate() {
               <CardTitle>Transactions</CardTitle>
             </CardHeader>
             <CardContent>
-              {isTransactionsResponse(transactionsData) ? (
-                <TransactionsTable
-                  transactions={transactionsData.data.data}
-                  totalItems={transactionsData.data.totalItems}
-                  currentPage={page}
-                  limit={limit}
-                  onPageChange={handlePageChange}
-                  onLimitChange={handleLimitChange}
-                  isLoading={isLoadingTransactions}
-                />
-              ) : (
-                <div className="flex h-32 items-center justify-center text-muted-foreground">
-                  {isLoadingTransactions
-                    ? "Chargement..."
-                    : "Aucune transaction disponible"}
-                </div>
-              )}
+              <TransactionsDataTable
+                transactions={
+                  (transactionsData as any)?.data?.data
+                    ? (transactionsData as any).data.data
+                    : []
+                }
+                isLoading={isLoadingTransactions}
+                period={period}
+                date={date}
+                onPeriodChange={setPeriod}
+                onDateChange={setDate}
+                totalItems={(transactionsData as any)?.totalItems || 0}
+                currentPage={page}
+                itemsPerPage={limit}
+                onPageChange={setPage}
+                onItemsPerPageChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setPage(1); // Reset to first page when changing items per page
+                }}
+              />
             </CardContent>
           </Card>
         </motion.div>
 
+        {/* Top Sellers Commissions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -307,39 +290,50 @@ export default function FinancesTemplate() {
             <CardContent>
               {isLoadingSellers ? (
                 <LoadingSkeleton rows={6} />
-              ) : !isApiError(sellersCommissionData) &&
-                sellersCommissionData?.data &&
-                Array.isArray(sellersCommissionData.data) &&
-                sellersCommissionData.data.length > 0 ? (
+              ) : sellersCommissionData &&
+                Array.isArray(sellersCommissionData) &&
+                sellersCommissionData.length > 0 ? (
                 <div className="space-y-3">
-                  {sellersCommissionData.data.slice(0, 8).map((seller: any) => (
-                    <div
-                      key={seller.id}
-                      className="flex items-center justify-between p-3 rounded-lg border"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-bleu-doux/10 flex items-center justify-center">
-                          <span className="font-semibold text-bleu-doux">
-                            {seller.seller_name.charAt(0).toUpperCase()}
-                          </span>
+                  {sellersCommissionData
+                    .slice(0, 8)
+                    .map(
+                      (seller: {
+                        id: string;
+                        seller_name: string;
+                        commission_rate: number;
+                        commission_amount: number;
+                        total_sales: number;
+                      }) => (
+                        <div
+                          key={seller.id}
+                          className="flex items-center justify-between p-3 rounded-lg border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-bleu-doux/10 flex items-center justify-center">
+                              <span className="font-semibold text-bleu-doux">
+                                {seller.seller_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">
+                                {seller.seller_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Taux: {seller.commission_rate}%
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {formatCurrency(seller.commission_amount)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Ventes: {formatCurrency(seller.total_sales)}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{seller.seller_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Taux: {seller.commission_rate}%
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          {formatCurrency(seller.commission_amount)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Ventes: {formatCurrency(seller.total_sales)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                      ),
+                    )}
                 </div>
               ) : (
                 <div className="flex h-32 items-center justify-center text-muted-foreground">

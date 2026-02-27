@@ -9,10 +9,10 @@ export const meQueryOptions = () => ({
   queryFn: async () => {
     const result = await meAction();
     if (result.success) {
-      return result.data.data.user;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération du profil",
+      result.message || "Erreur lors de la récupération du profil",
     );
   },
 });

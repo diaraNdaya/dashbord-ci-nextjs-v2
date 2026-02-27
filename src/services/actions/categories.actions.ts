@@ -16,10 +16,14 @@ import { serverRequest } from "@/services/server/axios-server.server";
 import { safeAction } from "@/services/server/safe-action.server";
 import { endpoints } from "../endpoints";
 
-export async function getAllCategoriesAction(page: number, limit: number) {
+export async function getAllCategoriesAction(
+  page: number,
+  limit: number,
+  searchParams?: CategorySearchParams,
+) {
   return safeAction<CategoryApiResponse>(async () => {
     return serverRequest<CategoryApiResponse>(
-      endpoints.CATEGORY.allCategory(page, limit),
+      endpoints.CATEGORY.allCategory(page, limit, searchParams?.search),
       {
         method: "GET",
       },
@@ -43,6 +47,7 @@ export async function updateCategoryAction(
   id: string,
   data: CategoryUpdateParams,
 ) {
+  console.log("data", data);
   return safeAction<CategoryDeleteResponse>(async () => {
     return serverRequest<CategoryDeleteResponse>(
       endpoints.CATEGORY.updateCategory(id),
@@ -122,17 +127,19 @@ export async function deleteSubCategoryAction(id: string) {
   });
 }
 
-// Action pour l'upload de fichiers
 export async function uploadFileAction(file: File) {
   return safeAction<FileUploadResponse>(async () => {
+    console.log("File", file);
     const formData = new FormData();
     formData.append("file", file);
 
+    // Pour FormData, on ne doit PAS définir Content-Type manuellement
     return serverRequest<FileUploadResponse>(
       endpoints.DATARESSORCES.uploadFile(),
       {
         method: "POST",
         body: formData,
+        // Ne pas définir headers du tout pour FormData
       },
       { tokenCookieName: "accessToken" },
     );

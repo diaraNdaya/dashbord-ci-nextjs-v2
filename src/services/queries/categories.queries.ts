@@ -1,5 +1,8 @@
 import type {
+  CategoryCredentials,
+  CategorySearchParams,
   CategoryUpdateParams,
+  SubcategoryCredentials,
   SubcategorySearchParams,
   SubcategoryUpdateParams,
 } from "@/lib/types/categories.types";
@@ -15,21 +18,23 @@ import {
   uploadFileAction,
 } from "@/services/actions/categories.actions";
 
-// Queries pour les catégories
-export const getAllCategoriesQueryOptions = (page: number, limit: number) => ({
-  queryKey: ["categories", page, limit] as const,
+export const getAllCategoriesQueryOptions = (
+  page: number,
+  limit: number,
+  searchParams?: CategorySearchParams,
+) => ({
+  queryKey: ["categories", page, limit, searchParams] as const,
   queryFn: async () => {
-    const result = await getAllCategoriesAction(page, limit);
+    const result = await getAllCategoriesAction(page, limit, searchParams);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des catégories",
+      result.message || "Erreur lors de la récupération des catégories",
     );
   },
 });
 
-// Queries pour les sous-catégories
 export const getAllSubCategoriesQueryOptions = (
   page: number,
   limit: number,
@@ -39,44 +44,38 @@ export const getAllSubCategoriesQueryOptions = (
   queryFn: async () => {
     const result = await getAllSubCategoriesAction(page, limit, searchParams);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
-        "Erreur lors de la récupération des sous-catégories",
+      result.message || "Erreur lors de la récupération des sous-catégories",
     );
   },
 });
 
-// Mutations pour les catégories
 export const createCategoryMutationOptions = () => ({
-  mutationFn: createCategoryAction,
+  mutationFn: (data: CategoryCredentials) => createCategoryAction(data),
 });
 
 export const updateCategoryMutationOptions = () => ({
   mutationFn: ({ id, data }: { id: string; data: CategoryUpdateParams }) =>
     updateCategoryAction(id, data),
 });
-
 export const deleteCategoryMutationOptions = () => ({
-  mutationFn: deleteCategoryAction,
+  mutationFn: ({ id }: { id: string }) => deleteCategoryAction(id),
 });
 
-// Mutations pour les sous-catégories
 export const createSubCategoryMutationOptions = () => ({
-  mutationFn: createSubCategoryAction,
+  mutationFn: (data: SubcategoryCredentials) => createSubCategoryAction(data),
 });
-
 export const updateSubCategoryMutationOptions = () => ({
   mutationFn: ({ id, data }: { id: string; data: SubcategoryUpdateParams }) =>
     updateSubCategoryAction(id, data),
 });
 
 export const deleteSubCategoryMutationOptions = () => ({
-  mutationFn: deleteSubCategoryAction,
+  mutationFn: ({ id }: { id: string }) => deleteSubCategoryAction(id),
 });
 
-// Mutation pour l'upload de fichiers
 export const uploadFileMutationOptions = () => ({
-  mutationFn: uploadFileAction,
+  mutationFn: ({ file }: { file: File }) => uploadFileAction(file),
 });

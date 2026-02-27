@@ -17,14 +17,15 @@ export async function loginAction(input: LoginCredentials) {
         body: JSON.stringify(input),
       },
     );
+
     const cookiesStore = await cookies();
 
-    if (res.data.user.role.name !== "ADMIN") {
+    if (res.user.role.name !== "ADMIN") {
       throw new Error(
         "Accès refusé : Vous n'êtes pas autorisé à accéder à cette application. Seuls les administrateurs peuvent se connecter.",
       );
     }
-    const token = res.data.accessToken;
+    const token = res.accessToken;
     if (token) {
       cookiesStore.set("accessToken", token, {
         httpOnly: true,

@@ -3,6 +3,7 @@
 import { LoadingSkeleton } from "@/components/atoms/LoadingSkeleton";
 import { KPIStatCard } from "@/components/molecules/KPIStatCard";
 import { unwrapData } from "@/components/organisms/dashboard-data.utils";
+import { formatPrice } from "@/lib/utils";
 import {
   getDashboardDataQueryOptions,
   getMetricsDataQueryOptions,
@@ -179,7 +180,7 @@ export function DashboardKpiRow() {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       <KPIStatCard
         title="Revenus totaux"
-        value={`${Number(stats.totalRevenue).toLocaleString()} FCFA`}
+        value={formatPrice(stats.totalRevenue)}
         trend={trend}
         icon={CreditCardIcon}
       />

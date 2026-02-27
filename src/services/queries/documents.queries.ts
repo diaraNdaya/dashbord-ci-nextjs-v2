@@ -11,10 +11,10 @@ export const getAllDocumentsQueryOptions = (page: number, limit: number) => ({
   queryFn: async () => {
     const result = await getAllDocumentsAction(page, limit);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des documents",
+      result.message || "Erreur lors de la récupération des documents",
     );
   },
 });
@@ -28,11 +28,10 @@ export const getAllVerifiedSellersQueryOptions = (
   queryFn: async () => {
     const result = await getAllVerifiedSellersAction(page, limit, statut);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
-        "Erreur lors de la récupération des vendeurs vérifiés",
+      result.message || "Erreur lors de la récupération des vendeurs vérifiés",
     );
   },
 });
@@ -46,11 +45,10 @@ export const getAllVerifiedCustomersQueryOptions = (
   queryFn: async () => {
     const result = await getAllVerifiedCustomersAction(page, limit, statut);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
-        "Erreur lors de la récupération des clients vérifiés",
+      result.message || "Erreur lors de la récupération des clients vérifiés",
     );
   },
 });

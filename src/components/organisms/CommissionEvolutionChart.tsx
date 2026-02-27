@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getCommissionEvolutionQueryOptions } from "@/services/queries/finances.queries";
+import { getCommissionEvolutionQueryOptions } from "@/services/queries/commission.queries";
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
@@ -40,19 +40,30 @@ export function CommissionEvolutionChart({
     error,
     refetch,
   } = useQuery(getCommissionEvolutionQueryOptions(period, date));
+
   const chartData = useMemo(() => {
-    if (!evolutionData?.data.data || !Array.isArray(evolutionData.data.data)) {
+    if (
+      !evolutionData ||
+      !(evolutionData as any)?.success ||
+      !(evolutionData as any)?.data
+    ) {
       return [];
     }
 
-    return evolutionData.data.data.map((item: any) => ({
+    const responseData = (evolutionData as any).data;
+
+    // Handle both single object and array responses
+    const dataArray = Array.isArray(responseData)
+      ? responseData
+      : [responseData];
+
+    return dataArray.map((item: any) => ({
       period: item.date || item.period,
       total: Number(item.commission || item.total || 0),
       transactions: Number(item.transactions || 0),
     }));
   }, [evolutionData]);
 
-  // Calculate statistics
   const stats = useMemo(() => {
     const totalCommissions = chartData.reduce(
       (sum, item) => sum + item.total,

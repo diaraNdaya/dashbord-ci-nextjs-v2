@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
-
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
         hostname: "**",
       },
       {
-        protocol: "http",
+        protocol: "https",
         hostname: "utfs.io",
       },
       {
@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
         hostname: "image.com",
       },
     ],
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
   },
 };
 

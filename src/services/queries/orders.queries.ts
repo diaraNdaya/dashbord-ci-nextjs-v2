@@ -15,10 +15,10 @@ export const fetchOrdersQueryOptions = (
     const result = await fetchOrdersAction(page, limit, statut);
 
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des commandes",
+      result.message || "Erreur lors de la récupération des commandes",
     );
   },
 });
@@ -29,10 +29,10 @@ export const getOneOrderQueryOptions = (id: string) => ({
     const result = await getOneOrderAction(id);
 
     if (result.success) {
-      return result.data.order;
+      return result.order;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération de la commande",
+      result.message || "Erreur lors de la récupération de la commande",
     );
   },
   enabled: !!id,

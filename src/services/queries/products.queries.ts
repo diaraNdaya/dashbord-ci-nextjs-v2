@@ -17,12 +17,12 @@ export const getAllProductsQueryOptions = (page: number, limit: number) => ({
   queryFn: async (): Promise<ProductsApiResponse> => {
     const result = await getAllProductsAction(page, limit);
     if (result.success) {
-      // Access the nested structure: result.data.data
-      const response = result.data as { data: ProductsApiResponse };
+      // Access the data structure
+      const response = result as { data: ProductsApiResponse };
       return response.data;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des produits",
+      result.message || "Erreur lors de la récupération des produits",
     );
   },
 });
@@ -32,12 +32,12 @@ export const getTopProductsQueryOptions = () => ({
   queryFn: async (): Promise<ProductsApiResponse> => {
     const result = await getTopProductsAction();
     if (result.success) {
-      // Access the nested structure: result.data.data
-      const response = result.data as { data: ProductsApiResponse };
+      // Access the nested structure: result.data
+      const response = result as { data: ProductsApiResponse };
       return response.data;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération des produits populaires",
     );
   },
@@ -56,10 +56,10 @@ export const getProductBySellerQueryOptions = (
   queryFn: async () => {
     const result = await getProductBySellerAction(params);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération des produits du vendeur",
     );
   },
@@ -70,14 +70,14 @@ export const getOneProductQueryOptions = (id: string) => ({
   queryFn: async (): Promise<Product> => {
     const result = await getOneProductAction(id);
     if (result.success) {
-      // Access the nested structure: result.data.data.product.product
-      const response = result.data as {
+      // Access the product data structure
+      const response = result as {
         data: { product: { product: Product } };
       };
       return response.data.product.product;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération du produit",
+      result.message || "Erreur lors de la récupération du produit",
     );
   },
   enabled: !!id, // Ne s'exécute que si l'ID est fourni

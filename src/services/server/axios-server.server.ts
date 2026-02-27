@@ -47,8 +47,24 @@ export async function serverRequest<T>(
   const accessToken = cookiesStore.get(tokenCookieName)?.value;
 
   const headers = new Headers(options.headers);
-  if (!headers.has("Content-Type"))
+
+  // Ne pas forcer Content-Type si c'est FormData ou si c'est explicitement undefined
+  const isFormData = options.body instanceof FormData;
+  const hasExplicitContentType =
+    options.headers && "Content-Type" in options.headers;
+
+  if (!isFormData && !hasExplicitContentType && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  // Si Content-Type est explicitement undefined, le supprimer
+  if (
+    hasExplicitContentType &&
+    (options.headers as any)["Content-Type"] === undefined
+  ) {
+    headers.delete("Content-Type");
+  }
+
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
   const res = await fetch(endpoint, {

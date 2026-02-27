@@ -5,32 +5,33 @@ const AUTH_COOKIE = "accessToken";
 const LOGIN_PATH = "/login";
 const DASH_PATH = "/dashboard";
 
-/**
- * Règles:
- * - Si route protégée (dashboard, etc.) et pas de token => redirect /login
- * - Si route auth (/login) et token présent => redirect /dashboard
- */
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const token = req.cookies.get(AUTH_COOKIE)?.value;
   const isAuthed = Boolean(token);
 
-  const isAuthRoute =
-    pathname === LOGIN_PATH || pathname.startsWith(`${LOGIN_PATH}/`);
+  const isAuthRoute = pathname === LOGIN_PATH;
   const isProtectedRoute =
-    pathname === DASH_PATH || pathname.startsWith(`${DASH_PATH}/`);
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/orders") ||
+    pathname.startsWith("/products") ||
+    pathname.startsWith("/users") ||
+    pathname.startsWith("/finances") ||
+    pathname.startsWith("/commissions") ||
+    pathname.startsWith("/configuration") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings");
 
-  // 1) Pas connecté => interdit sur routes protégées
+  // Redirect to login if not authenticated and trying to access protected route
   if (isProtectedRoute && !isAuthed) {
     const url = req.nextUrl.clone();
     url.pathname = LOGIN_PATH;
-    // option: pour revenir après login
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // 2) Connecté => interdit sur login
+  // Redirect to dashboard if authenticated and trying to access login
   if (isAuthRoute && isAuthed) {
     const url = req.nextUrl.clone();
     url.pathname = DASH_PATH;
@@ -40,15 +41,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-/**
- * Matcher: évite de matcher _next, assets, api, etc.
- * Ajuste selon tes routes.
- */
 export const config = {
-  matcher: [
-    "/((?!api|_next|_vercel|public|.*\\..*).*)",
-    "/dashboard/:path*",
-    "/login",
-    "/login/:path*",
-  ],
+  matcher: ["/((?!api|_next|_vercel|public|.*\\..*).*)"],
 };

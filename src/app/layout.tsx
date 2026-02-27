@@ -1,6 +1,7 @@
 import { ReactQueryProvider } from "@/lib/providers/ReactQueryProvider";
 import { ThemeProvider } from "next-themes";
 import localFont from "next/font/local";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const helveticaNeue = localFont({
@@ -44,6 +45,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ReactQueryProvider>{children}</ReactQueryProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

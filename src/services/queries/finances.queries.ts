@@ -21,7 +21,6 @@ export const getCommissionGlobaleQueryOptions = () => ({
   },
 });
 
-// Query pour les transactions
 export const getTransactionsQueryOptions = (
   period: string,
   date: string,
@@ -46,7 +45,6 @@ export const getTransactionsQueryOptions = (
       limit,
       search,
     );
-    console.log("Transactions data", result);
     if (result.success) {
       return result;
     }
@@ -56,7 +54,6 @@ export const getTransactionsQueryOptions = (
   },
 });
 
-// Query pour l'évolution des commissions
 export const getCommissionEvolutionQueryOptions = (
   period: string,
   date: string,

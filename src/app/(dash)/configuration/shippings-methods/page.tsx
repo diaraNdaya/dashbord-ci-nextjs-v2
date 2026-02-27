@@ -1,22 +1,18 @@
-import DocumentsTemplate from "@/components/templates/documents.template";
+import BannersTemplate from "@/components/templates/banners.template";
 import { metaObject } from "@/lib/config/site.config";
 import { meQueryOptions } from "@/services/queries/auth.queries";
-import { getAllDocumentsQueryOptions } from "@/services/queries/commission.queries";
 import { getQueryClient } from "@/services/queries/getQueryClient";
 import { RQProvider } from "@/services/queries/RQProvider";
 import { dehydrate } from "@tanstack/react-query";
 
-export const metadata = metaObject("Documents");
+export const metadata = metaObject("Methodes de Livraisons");
 
-export default async function DocumentsPage() {
+export default async function ShippingsMethodPage() {
   const qc = getQueryClient();
-
   await qc.prefetchQuery(meQueryOptions());
-  await qc.prefetchQuery(getAllDocumentsQueryOptions(1, 10));
-
   return (
     <RQProvider state={dehydrate(qc)}>
-      <DocumentsTemplate />
+      <BannersTemplate />
     </RQProvider>
   );
 }

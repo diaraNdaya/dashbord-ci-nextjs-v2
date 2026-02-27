@@ -30,10 +30,10 @@ export const fetchUsersQueryOptions = (
   queryFn: async () => {
     const result = await fetchUsersAction(page, limit, searchParams);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des utilisateurs",
+      result.message || "Erreur lors de la récupération des utilisateurs",
     );
   },
 });
@@ -48,10 +48,10 @@ export const fetchSellersQueryOptions = (
   queryFn: async () => {
     const result = await fetchSellersAction(page, limit, searchParams);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des vendeurs",
+      result.message || "Erreur lors de la récupération des vendeurs",
     );
   },
 });
@@ -61,10 +61,10 @@ export const fetchTopSellersQueryOptions = () => ({
   queryFn: async () => {
     const result = await fetchTopSellersAction();
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des top vendeurs",
+      result.message || "Erreur lors de la récupération des top vendeurs",
     );
   },
 });
@@ -75,10 +75,10 @@ export const fetchOrdersQueryOptions = (page: number, limit: number) => ({
   queryFn: async () => {
     const result = await fetchOrdersAction(page, limit);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des commandes",
+      result.message || "Erreur lors de la récupération des commandes",
     );
   },
 });
@@ -89,10 +89,10 @@ export const fetchUsersBlockedQueryOptions = (page: number, limit: number) => ({
   queryFn: async () => {
     const result = await fetchUsersBlockedAction(page, limit);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
+      result.message ||
         "Erreur lors de la récupération des utilisateurs bloqués",
     );
   },
@@ -104,12 +104,12 @@ export const getOneCustomerQueryOptions = (id: string) => ({
     const result = await getOneCustomerAction(id);
     if (!result.success) {
       throw new Error(
-        result.error.message ||
+        result.message ||
           "Erreur lors de la récupération des détails du client",
       );
     }
 
-    const payload = result.data?.data as {
+    const payload = result?.data as {
       customer?: Customer;
       data?: Customer;
     };
@@ -132,12 +132,12 @@ export const getOneSellerQueryOptions = (id: string) => ({
     const result = await getOneSellerAction(id);
     if (!result.success) {
       throw new Error(
-        result.error.message ||
+        result.message ||
           "Erreur lors de la récupération des détails du vendeur",
       );
     }
 
-    const payload = result.data?.data as {
+    const payload = result?.data as {
       seller?: Seller;
       data?: Seller;
     };
@@ -160,10 +160,10 @@ export const getAllDocumentsQueryOptions = (page: number, limit: number) => ({
   queryFn: async () => {
     const result = await getAllDocumentsAction(page, limit);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message || "Erreur lors de la récupération des documents",
+      result.message || "Erreur lors de la récupération des documents",
     );
   },
 });
@@ -177,11 +177,10 @@ export const getAllVerifiedSellersQueryOptions = (
   queryFn: async () => {
     const result = await getAllVerifiedSellersAction(page, limit, statut);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
-        "Erreur lors de la récupération des vendeurs vérifiés",
+      result.message || "Erreur lors de la récupération des vendeurs vérifiés",
     );
   },
 });
@@ -195,11 +194,10 @@ export const getAllVerifiedCustomersQueryOptions = (
   queryFn: async () => {
     const result = await getAllVerifiedCustomersAction(page, limit, statut);
     if (result.success) {
-      return result.data;
+      return result;
     }
     throw new Error(
-      result.error.message ||
-        "Erreur lors de la récupération des clients vérifiés",
+      result.message || "Erreur lors de la récupération des clients vérifiés",
     );
   },
 });

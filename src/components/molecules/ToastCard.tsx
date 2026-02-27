@@ -59,13 +59,14 @@ export function ToastCard({
     </div>
   );
 }
+
 export function toastLoading(message: string, title = "Veuillez patienter") {
   return toast.custom(
     () => <ToastCard kind="loading" title={title} message={message} />,
     {
       duration: Infinity,
       position: "top-center",
-    }
+    },
   );
 }
 export function toastSuccess(message: string, title = "Succès") {
@@ -74,7 +75,7 @@ export function toastSuccess(message: string, title = "Succès") {
     {
       duration: 3500,
       position: "top-center",
-    }
+    },
   );
 }
 export function toastInfo(message: string, title = "Info") {
@@ -83,7 +84,7 @@ export function toastInfo(message: string, title = "Info") {
     {
       duration: 3500,
       position: "top-center",
-    }
+    },
   );
 }
 export function toastWarn(message: string, title = "Attention") {
@@ -92,7 +93,7 @@ export function toastWarn(message: string, title = "Attention") {
     {
       duration: 4000,
       position: "top-center",
-    }
+    },
   );
 }
 export function toastErr(message: string, title = "Erreur") {
@@ -101,7 +102,7 @@ export function toastErr(message: string, title = "Erreur") {
     {
       duration: 5500,
       position: "top-center",
-    }
+    },
   );
 }
 export function toastCartAdded(opts: {
@@ -127,7 +128,7 @@ export function toastCartAdded(opts: {
     {
       duration: 4000,
       position: "top-center",
-    }
+    },
   );
 }
 
