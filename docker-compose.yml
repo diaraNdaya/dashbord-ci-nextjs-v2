@@ -1,0 +1,16 @@
+services:
+  dashboard:
+    container_name: ndaya_dashboard
+    image: ndayahub/ndaya_dashboard:latest
+    build:
+      dockerfile: Dockerfile
+      context: .
+      args:
+        - NODE_ENV=production
+    ports:
+      - '3400:3400'
+    networks:
+      - prod   
+networks:
+  prod:                   
+      driver: bridge

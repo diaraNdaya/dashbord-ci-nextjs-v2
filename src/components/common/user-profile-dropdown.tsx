@@ -30,13 +30,19 @@ export function UserProfileDropdown() {
   const queryClient = useQueryClient();
   const { data: currentUser, isLoading, error } = useQuery(meQueryOptions());
 
+  // Interface temporaire pour le type casting
+  interface UserData {
+    user?: {
+      username?: string;
+      email?: string;
+    };
+  }
+
   const logoutMutation = useMutation({
     ...logoutMutationOptions(),
-    onSuccess: (result) => {
-      if (result.success) {
-        queryClient.clear();
-        router.push("/login");
-      }
+    onSuccess: () => {
+      queryClient.clear();
+      router.push("/login");
     },
     onError: (error) => {
       console.error("Erreur lors de la déconnexion:", error);
@@ -69,7 +75,7 @@ export function UserProfileDropdown() {
     return <div className="text-red-600">{error.message}</div>;
   }
 
-  if (!currentUser) {
+  if (!currentUser || "error" in currentUser) {
     return <div className="text-red-600">Utilisateur non trouvé</div>;
   }
 
@@ -85,9 +91,11 @@ export function UserProfileDropdown() {
             />
           </div>
           <div className="hidden md:flex flex-col items-start">
-            <span className="text-sm font-medium">{currentUser.username}</span>
+            <span className="text-sm font-medium">
+              {(currentUser as UserData).user?.username}
+            </span>
             <span className="text-xs text-muted-foreground">
-              {currentUser.email}
+              {(currentUser as UserData).user?.email}
             </span>
           </div>
           <HugeiconsIcon

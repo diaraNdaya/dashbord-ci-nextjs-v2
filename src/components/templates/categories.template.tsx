@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/molecules/PageHeader";
 import { CategoryTable } from "@/components/organisms/CategoryTable";
 import { CategoryViewDialog } from "@/components/organisms/CategoryViewDialog";
 import CreateAndUpdateCategoryForm from "@/components/organisms/create-and-update-category-form";
+import { useConfirm } from "@/hooks/useConfirm";
 import type {
   Category,
   CategorySearchParams,
@@ -22,6 +23,7 @@ import { toastErr, toastSuccess } from "../molecules/ToastCard";
 
 export default function CategoriesTemplate() {
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchParams, setSearchParams] = useState<CategorySearchParams>({});
@@ -54,8 +56,16 @@ export default function CategoriesTemplate() {
     setEditingCategory(category);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer cette catégorie ?")) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirm({
+      title: "Supprimer la catégorie",
+      description:
+        "Êtes-vous sûr de vouloir supprimer cette catégorie ? Cette action est irréversible.",
+      confirmText: "Supprimer",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
       deleteMutation.mutate({ id });
     }
   };
@@ -154,6 +164,7 @@ export default function CategoriesTemplate() {
         isOpen={!!viewingCategory}
         onClose={handleCloseView}
       />
+      <ConfirmDialog />
     </motion.div>
   );
 }

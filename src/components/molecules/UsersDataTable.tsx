@@ -90,7 +90,7 @@ export function UsersDataTable({
 
     return (
       <Badge
-        variant="secondary"
+        variant="default"
         className="bg-gray-50 text-gray-700 border-gray-200"
       >
         Non vérifié
@@ -145,7 +145,9 @@ export function UsersDataTable({
             </div>
             <div>
               <div className="font-medium">{user.displayName}</div>
-              <div className="text-sm text-muted-foreground">{user.email || "N/A"}</div>
+              <div className="text-sm text-muted-foreground">
+                {user.email || "N/A"}
+              </div>
             </div>
           </div>
         );
@@ -160,7 +162,9 @@ export function UsersDataTable({
         return (
           <div className="text-sm">
             <div>{user.location || "N/A"}</div>
-            {user.city && <div className="text-muted-foreground">{user.city}</div>}
+            {user.city && (
+              <div className="text-muted-foreground">{user.city}</div>
+            )}
           </div>
         );
       },

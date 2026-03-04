@@ -7,7 +7,9 @@ import { useEffect, useState } from "react";
 
 interface SearchInputProps {
   placeholder?: string;
-  onSearch: (query: string) => void;
+  onSearch?: (query: string) => void;
+  onChange?: (query: string) => void;
+  value?: string;
   debounceMs?: number;
   className?: string;
 }
@@ -15,19 +17,33 @@ interface SearchInputProps {
 export function SearchInput({
   placeholder = "Rechercher...",
   onSearch,
+  onChange,
+  value,
   debounceMs = 300,
   className = "",
 }: SearchInputProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(value || "");
 
   // Debounce la recherche
   useEffect(() => {
     const timer = setTimeout(() => {
-      onSearch(searchQuery);
+      if (onSearch) {
+        onSearch(searchQuery);
+      }
+      if (onChange) {
+        onChange(searchQuery);
+      }
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, onSearch, debounceMs]);
+  }, [searchQuery, onSearch, onChange, debounceMs]);
+
+  // Sync with external value prop
+  useEffect(() => {
+    if (value !== undefined && value !== searchQuery) {
+      setSearchQuery(value);
+    }
+  }, [value]);
 
   const handleClear = () => {
     setSearchQuery("");

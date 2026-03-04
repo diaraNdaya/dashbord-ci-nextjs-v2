@@ -38,18 +38,6 @@ export function OrderDetailsContent({
   const total =
     order.payment?.amount || order.totalAmount || subtotal + shipping + tax;
 
-  console.log("Order financial data:", {
-    subtotal,
-    shipping: order.shippingMethods?.price,
-    shippingMethodName: order.shippingMethods?.name,
-    totalFromAPI: order.totalAmount,
-    paymentAmount: order.payment?.amount,
-    calculatedTotal: subtotal + shipping + tax,
-    finalTotal: total,
-    paymentStatus: order.payment?.payment_status,
-    currency: order.currency,
-  });
-
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       {/* Ordered Items */}

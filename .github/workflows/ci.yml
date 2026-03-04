@@ -1,0 +1,75 @@
+name: Integration Continue And Continue Deployment For web App
+on:
+  push:
+    branches: 
+      - main
+  # pull_request:
+  #   branches:
+  #     - develop
+    tags:
+        - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV }}" | base64 -d > .env
+
+      - name: Build and tag Docker images
+        run: |
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/ndaya_dashboard:latest .
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/ndaya_dashboard:latest
+
+  update-metadata:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Update image metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_HUB_USERNAME }}/ndaya_dashboard:latest
+          tags: |
+            type=sha
+          labels: |
+            org.opencontainers.image.title=ndaya web
+            org.opencontainers.image.description=This image contains a web app for marketplace
+            org.opencontainers.image.url=https://github.com/${{github.repository}}
+            org.opencontainers.image.revision=${{github.sha}}
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=1.0.0
+            org.opencontainers.image.authors=MyName marc-ephrem
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            
+  deploy:
+    runs-on: ubuntu-latest
+    needs: update-metadata
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            # Tirer la dernière image depuis Docker Hub
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/ndaya_dashboard:latest
+
+            echo "🧹 Nettoyage ancien conteneur..."
+            docker compose rm -sf dashboard
+
+            echo "🚀 Déploiement de l'application..."
+            cd /home/ndaya/nginx
+            docker compose up -d --no-deps dashboard
+            docker compose restart nginx

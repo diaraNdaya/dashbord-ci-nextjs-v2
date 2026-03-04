@@ -14,12 +14,20 @@ export const fetchOrdersQueryOptions = (
   queryFn: async () => {
     const result = await fetchOrdersAction(page, limit, statut);
 
-    if (result.success) {
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des commandes",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des commandes";
+    throw new Error(errorMessage);
   },
 });
 
@@ -28,12 +36,22 @@ export const getOneOrderQueryOptions = (id: string) => ({
   queryFn: async () => {
     const result = await getOneOrderAction(id);
 
-    if (result.success) {
-      return result.order;
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
+      return result && typeof result === "object" && "order" in result
+        ? result.order
+        : result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération de la commande",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération de la commande";
+    throw new Error(errorMessage);
   },
   enabled: !!id,
 });

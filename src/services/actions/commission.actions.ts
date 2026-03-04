@@ -138,7 +138,6 @@ export async function createCommissionAction(data: CommissionCreateData) {
 // Action pour mettre à jour une commission
 export async function updateCommissionAction(data: CommissionUpdateData) {
   return safeAction<CommissionRule>(async () => {
-    console.log("rate", data);
     return serverRequest<CommissionRule>(
       endpoints.DASHBOARD.createCommission(),
       {

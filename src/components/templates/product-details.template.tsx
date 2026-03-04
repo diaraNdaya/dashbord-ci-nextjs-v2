@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useConfirm } from "@/hooks/useConfirm";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,16 +11,30 @@ import { LoadingSpinner } from "@/components/atoms";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
-import { getOneProductQueryOptions } from "@/services/queries/products.queries";
+import { getAllCategoriesQueryOptions } from "@/services/queries/categories.queries";
+import {
+  blockedProductMutationOptions,
+  breakProductMutationOptions,
+  getOneProductQueryOptions,
+  updateProductMutationOptions,
+} from "@/services/queries/products.queries";
 import {
   ArrowLeft01Icon,
-  Delete02Icon,
-  Edit02Icon,
+  Cancel01Icon,
   Package01Icon,
+  Shield01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { toastErr, toastSuccess } from "../molecules";
 
 interface ProductDetailsTemplateProps {
   productId: string;
@@ -29,13 +44,67 @@ export default function ProductDetailsTemplate({
   productId,
 }: ProductDetailsTemplateProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 
   const {
     data: productData,
     isLoading,
     error,
   } = useQuery(getOneProductQueryOptions(productId));
+
+  const { data: categoriesData } = useQuery(
+    getAllCategoriesQueryOptions(1, 100),
+  );
+
+  const updateProductMutation = useMutation({
+    ...updateProductMutationOptions(),
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ["products", productId] });
+        toastSuccess("Produit mis à jour avec succès");
+      } else {
+        toastErr(result.message || "Erreur lors de la mise à jour");
+      }
+    },
+    onError: (error: Error) => {
+      toastErr(error.message);
+    },
+  });
+
+  const blockedProductMutation = useMutation({
+    ...blockedProductMutationOptions(),
+    onSuccess: (result) => {
+      console.log("result", result);
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ["products", productId] });
+        console.log("Produit bloqué avec succès");
+      } else {
+        console.error("Erreur lors du blocage:", result.message);
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Erreur lors du blocage:", error);
+    },
+  });
+
+  const breakProductMutation = useMutation({
+    ...breakProductMutationOptions(),
+    onSuccess: (result) => {
+      console.log("rupture", result);
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ["products", productId] });
+        console.log("Produit marqué en rupture avec succès");
+      } else {
+        console.error("Erreur lors de la rupture:", result.message);
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Erreur lors de la rupture:", error);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -55,7 +124,6 @@ export default function ProductDetailsTemplate({
     );
   }
 
-  console.log("Details", productData);
   const product = productData;
 
   if (!product) {
@@ -74,6 +142,52 @@ export default function ProductDetailsTemplate({
   const isInStock = product.stockQuantity > 0;
   const isLowStock = product.stockQuantity <= 10 && product.stockQuantity > 0;
 
+  if (selectedCategoryId === "" && product.category_Id) {
+    setSelectedCategoryId(product.category_Id);
+  }
+
+  const handleUpdateCategory = () => {
+    if (selectedCategoryId && selectedCategoryId !== product.category_Id) {
+      updateProductMutation.mutate({
+        id: productId,
+        params: {
+          category_Id: selectedCategoryId,
+          seller_Id: product.seller_Id,
+        },
+      });
+    }
+  };
+
+  const handleBlockProduct = async () => {
+    const confirmed = await confirm({
+      title: "Bloquer le produit",
+      description: "Êtes-vous sûr de vouloir bloquer ce produit ?",
+      confirmText: "Bloquer",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
+      blockedProductMutation.mutate(productId);
+    }
+  };
+
+  const handleBreakProduct = async () => {
+    const confirmed = await confirm({
+      title: "Marquer en rupture",
+      description: "Êtes-vous sûr de vouloir marquer ce produit en rupture ?",
+      confirmText: "Marquer en rupture",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
+      breakProductMutation.mutate(productId);
+    }
+  };
+
+  const categories =
+    (categoriesData as { data?: Array<{ id: string; name: string }> })?.data ||
+    [];
+
   return (
     <motion.div
       className="flex flex-1 flex-col"
@@ -82,7 +196,6 @@ export default function ProductDetailsTemplate({
       transition={{ duration: 0.6 }}
     >
       <div className="@container/main flex flex-1 flex-col gap-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -112,25 +225,77 @@ export default function ProductDetailsTemplate({
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <HugeiconsIcon icon={Edit02Icon} className="h-4 w-4 mr-2" />
-              Modifier
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-rouge-vif hover:text-rouge-vif"
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 mr-2" />
-              Supprimer
-            </Button>
+          <div className="flex flex-col gap-2">
+            {/* Sélecteur de catégorie */}
+            <div className="flex gap-2 items-center">
+              <Select
+                value={selectedCategoryId}
+                onValueChange={setSelectedCategoryId}
+                disabled={updateProductMutation.isPending}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Changer la catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category: { id: string; name: string }) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {selectedCategoryId !== product.category_Id && (
+                <Button
+                  size="sm"
+                  onClick={handleUpdateCategory}
+                  disabled={updateProductMutation.isPending}
+                  className="bg-violet-600 hover:bg-violet-700"
+                >
+                  {updateProductMutation.isPending ? (
+                    <LoadingSpinner />
+                  ) : (
+                    "Valider"
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {/* Boutons d'actions */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBlockProduct}
+                disabled={blockedProductMutation.isPending}
+                className="flex-1 border-red-500/40 text-red-600 hover:bg-red-500/10"
+              >
+                <HugeiconsIcon icon={Shield01Icon} className="h-4 w-4 mr-2" />
+                {blockedProductMutation.isPending ? (
+                  <LoadingSpinner />
+                ) : (
+                  "Bloquer"
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBreakProduct}
+                disabled={breakProductMutation.isPending}
+                className="flex-1 border-orange-500/40 text-orange-600 hover:bg-orange-500/10"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 mr-2" />
+                {breakProductMutation.isPending ? (
+                  <LoadingSpinner />
+                ) : (
+                  "Rupture"
+                )}
+              </Button>
+            </div>
           </div>
         </motion.div>
-
-        {/* Product Details */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Images */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -139,7 +304,6 @@ export default function ProductDetailsTemplate({
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {/* Main Image */}
                   <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
                     {images.length > 0 ? (
                       <Image
@@ -330,6 +494,7 @@ export default function ProductDetailsTemplate({
           </motion.div>
         </div>
       </div>
+      <ConfirmDialog />
     </motion.div>
   );
 }

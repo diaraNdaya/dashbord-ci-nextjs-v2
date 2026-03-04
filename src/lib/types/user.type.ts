@@ -81,8 +81,7 @@ export const loginCredential = {
   password: "",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface LoginResponse extends ApiResponse<any> {
+export interface LoginResponse {
   user: User;
   accessToken: string;
   refreshToken: string;

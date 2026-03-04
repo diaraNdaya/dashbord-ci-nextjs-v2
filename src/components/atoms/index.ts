@@ -19,3 +19,6 @@ export { UserStatsCard } from "./UserStatsCard";
 
 // Finance Atoms
 export { FinanceStatsCard } from "./FinanceStatsCard";
+
+// Banner Atoms
+export { BannerStatsCard } from "./BannerStatsCard";

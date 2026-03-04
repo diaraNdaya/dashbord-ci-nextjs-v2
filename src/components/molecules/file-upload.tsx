@@ -34,7 +34,7 @@ export function ImageUploader({
       acceptedFiles: File[],
       fileRejections: {
         file: File;
-        errors: { code: string; message: string }[];
+        errors: readonly { code: string; message: string }[];
       }[],
     ) => {
       fileRejections.forEach(({ file, errors }) => {
@@ -152,7 +152,7 @@ export function ImageUploader({
               </div>
               <Button
                 variant="ghost"
-                size="icon"
+                size="default"
                 className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -176,5 +176,4 @@ export function ImageUploader({
   );
 }
 
-// Export par défaut pour compatibilité
 export default ImageUploader;

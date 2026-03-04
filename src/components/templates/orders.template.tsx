@@ -12,13 +12,13 @@ import { toast } from "sonner";
 import { OrderStatsCard } from "@/components/atoms/OrderStatsCard";
 import { OrdersDataTable } from "@/components/molecules/OrdersDataTable";
 import TablePagination from "@/components/molecules/TablePagination";
+import { useConfirm } from "@/hooks/useConfirm";
 import type { Order } from "@/lib/types/orders.type";
 import {
   deleteOrderMutationOptions,
   fetchOrdersQueryOptions,
 } from "@/services/queries/orders.queries";
-import { Search01Icon, ShoppingCart01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Search, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function OrdersTemplate() {
@@ -28,6 +28,7 @@ export default function OrdersTemplate() {
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Queries
   const { data: ordersData, isLoading } = useQuery(
@@ -37,8 +38,6 @@ export default function OrdersTemplate() {
       activeTab === "all" ? undefined : activeTab,
     ),
   );
-  console.log("Active tab:", activeTab);
-  console.log("Fetched orders data:", ordersData?.totalItems);
   const deleteOrderMutation = useMutation({
     ...deleteOrderMutationOptions(),
     onSuccess: () => {
@@ -54,8 +53,16 @@ export default function OrdersTemplate() {
     router.push(`/orders/${orderId}`);
   };
 
-  const handleDeleteOrder = (orderId: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer cette commande ?")) {
+  const handleDeleteOrder = async (orderId: string) => {
+    const confirmed = await confirm({
+      title: "Supprimer la commande",
+      description:
+        "Êtes-vous sûr de vouloir supprimer cette commande ? Cette action est irréversible.",
+      confirmText: "Supprimer",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
       deleteOrderMutation.mutate(orderId);
     }
   };
@@ -135,10 +142,7 @@ export default function OrdersTemplate() {
         >
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-vif/10 dark:bg-violet-vif/5">
-              <HugeiconsIcon
-                icon={ShoppingCart01Icon}
-                className="h-6 w-6 text-violet-vif"
-              />
+              <ShoppingCart className="h-6 w-6 text-violet-vif" />
             </div>
             <div>
               <h1 className="text-3xl font-bold">Commandes 🛒</h1>
@@ -197,10 +201,7 @@ export default function OrdersTemplate() {
                 <CardTitle>Liste des commandes</CardTitle>
                 <div className="flex items-center gap-2">
                   <div className="relative">
-                    <HugeiconsIcon
-                      icon={Search01Icon}
-                      className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                    />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       placeholder="Rechercher une commande..."
                       className="pl-9 w-64"
@@ -253,6 +254,7 @@ export default function OrdersTemplate() {
           </Card>
         </motion.div>
       </div>
+      <ConfirmDialog />
     </motion.div>
   );
 }

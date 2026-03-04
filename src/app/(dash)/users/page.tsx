@@ -9,7 +9,6 @@ export const metadata = metaObject("Gestion des utilisateurs");
 
 export default async function UsersPage() {
   const qc = getQueryClient();
-
   await qc.prefetchQuery(meQueryOptions());
 
   return (

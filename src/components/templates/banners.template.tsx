@@ -1,90 +1,255 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/atoms/ErrorMessage";
+import { LoadingSkeleton } from "@/components/atoms/LoadingSkeleton";
+import { BannerStatsCards } from "@/components/molecules/BannerStatsCards";
+import { PageHeader } from "@/components/molecules/PageHeader";
+import { toastErr, toastSuccess } from "@/components/molecules/ToastCard";
+import { BannerCreateDialog } from "@/components/organisms/BannerCreateDialog";
+import { BannerEditDialog } from "@/components/organisms/BannerEditDialog";
+import { BannerTable } from "@/components/organisms/BannerTable";
+import { BannerViewDialog } from "@/components/organisms/BannerViewDialog";
+import { useConfirm } from "@/hooks/useConfirm";
+import { bannerSchema, type BannerFormData } from "@/lib/schemas/banner.schema";
+import type { Banner, CreateBannerCredential } from "@/lib/types/banner.types";
+import type { BannerSearchParams } from "@/services/actions/banner.actions";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Add01Icon,
-  Delete01Icon,
-  Edit01Icon,
-  Image01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+  createBannerMutationOptions,
+  deleteBannerMutationOptions,
+  getAllBannersQueryOptions,
+  updateBannerMutationOptions,
+  uploadFileMutationOptions,
+} from "@/services/queries/banner.queries";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Image01Icon } from "@hugeicons/core-free-icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+
+const isFile = (v: unknown): v is File =>
+  typeof File !== "undefined" && v instanceof File;
 
 export default function BannersTemplate() {
-  const banners = [
-    {
-      id: 1,
-      title: "Summer Promotion",
-      description: "Main banner for summer sales",
-      position: "homepage_hero",
-      status: "active",
-      startDate: "2024-06-01",
-      endDate: "2024-08-31",
-    },
-    {
-      id: 2,
-      title: "New Products",
-      description: "Highlighting the latest new products",
-      position: "homepage_secondary",
-      status: "active",
-      startDate: "2024-01-01",
-      endDate: "2024-12-31",
-    },
-    {
-      id: 3,
-      title: "Black Friday",
-      description: "Banner for Black Friday event",
-      position: "category_top",
-      status: "scheduled",
-      startDate: "2024-11-25",
-      endDate: "2024-11-30",
-    },
-    {
-      id: 4,
-      title: "Free Shipping",
-      description: "Information about free shipping",
-      position: "cart_page",
-      status: "inactive",
-      startDate: "2024-01-01",
-      endDate: "2024-06-30",
-    },
-  ];
+  const { confirmDelete, ConfirmDialog } = useConfirm();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const limit = 10;
+  const queryClient = useQueryClient();
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge variant="default">Active</Badge>;
-      case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
-      case "scheduled":
-        return <Badge variant="outline">Programmée</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  // Paramètres de recherche
+  const searchParams: BannerSearchParams | undefined = useMemo(() => {
+    if (!searchTerm.trim()) return undefined;
+    return {
+      description: searchTerm,
+    };
+  }, [searchTerm]);
+
+  // Query pour récupérer les banners
+  const {
+    data: bannersData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery(getAllBannersQueryOptions(currentPage, limit, searchParams));
+
+  const uploadMutation = useMutation(uploadFileMutationOptions());
+
+  const createMutation = useMutation({
+    ...createBannerMutationOptions(),
+    mutationFn: async (values: BannerFormData) => {
+      let imageUrl = "";
+
+      if (values.image && isFile(values.image)) {
+        const uploadResponse = await uploadMutation.mutateAsync({
+          file: values.image,
+        });
+
+        if (uploadResponse.success) {
+          imageUrl = uploadResponse.url;
+        } else {
+          console.error("Failed to upload banner image:", uploadResponse);
+          toastErr("Erreur lors de l'upload de l'image");
+          return;
+        }
+      }
+
+      const bannerData: CreateBannerCredential = {
+        file_path: imageUrl,
+        description: values.description.trim(),
+        productLink: values.productLink?.trim() || "",
+        provider: "BANNER",
+      };
+
+      return await createBannerMutationOptions().mutationFn(bannerData);
+    },
+    onSuccess: (data) => {
+      toastSuccess("Banner créé avec succès");
+      setIsCreateDialogOpen(false);
+      createForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
+    },
+    onError: (error: Error) => {
+      toastErr(error.message || "Erreur lors de la création du banner");
+    },
+  });
+
+  const updateMutation = useMutation({
+    ...updateBannerMutationOptions(),
+    mutationFn: async (values: BannerFormData) => {
+      if (!selectedBanner) {
+        toastErr("Banner sélectionné manquant");
+        return;
+      }
+
+      let finalImageUrl = selectedBanner.file_path || "";
+
+      if (values.image && isFile(values.image)) {
+        const uploadResponse = await uploadMutation.mutateAsync({
+          file: values.image,
+        });
+
+        if (uploadResponse.success) {
+          finalImageUrl = uploadResponse.url;
+        } else {
+          console.error("Failed to upload new banner image:", uploadResponse);
+          toastErr("Erreur lors de l'upload de l'image");
+          return;
+        }
+      }
+
+      const bannerData: CreateBannerCredential = {
+        file_path: finalImageUrl,
+        description: values.description.trim() || selectedBanner.description,
+        productLink: values.productLink?.trim() || "",
+        provider: "BANNER",
+      };
+
+      return await updateBannerMutationOptions().mutationFn({
+        id: selectedBanner.id,
+        data: bannerData,
+      });
+    },
+    onSuccess: (data) => {
+      toastSuccess("Banner mis à jour avec succès");
+      setIsEditDialogOpen(false);
+      setSelectedBanner(null);
+      editForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
+    },
+    onError: (error: Error) => {
+      toastErr(error.message || "Erreur lors de la mise à jour du banner");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    ...deleteBannerMutationOptions(),
+    onSuccess: () => {
+      toastSuccess("Banner supprimé avec succès");
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
+    },
+    onError: (error: Error) => {
+      toastErr(error.message || "Erreur lors de la suppression du banner");
+    },
+  });
+
+  // Forms
+  const createForm = useForm<BannerFormData>({
+    resolver: zodResolver(bannerSchema),
+    defaultValues: {
+      image: null,
+      description: "",
+      productLink: "",
+    },
+  });
+
+  const editForm = useForm<BannerFormData>({
+    resolver: zodResolver(bannerSchema),
+    defaultValues: {
+      image: null,
+      description: "",
+      productLink: "",
+    },
+  });
+
+  // Handlers
+  const handleCreate = (data: BannerFormData) => {
+    createMutation.mutate(data);
+  };
+
+  const handleEdit = (banner: Banner) => {
+    setSelectedBanner(banner);
+    editForm.reset({
+      image: null,
+      description: banner.description,
+      productLink: "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdate = (data: BannerFormData) => {
+    updateMutation.mutate(data);
+  };
+
+  const handleDelete = async (banner: Banner) => {
+    const confirmed = await confirmDelete(banner.description);
+    if (confirmed) {
+      deleteMutation.mutate({ id: banner.id });
     }
   };
 
-  const getPositionLabel = (position: string) => {
-    switch (position) {
-      case "homepage_hero":
-        return "Homepage - Hero";
-      case "homepage_secondary":
-        return "Homepage - Secondary";
-      case "category_top":
-        return "Category - Top";
-      case "cart_page":
-        return "Cart Page";
-      default:
-        return position;
-    }
+  const handleView = (banner: Banner) => {
+    setSelectedBanner(banner);
+    setIsViewDialogOpen(true);
   };
+
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 flex-col gap-4">
+        <LoadingSkeleton rows={1} />
+        <div className="grid gap-4 md:grid-cols-4">
+          <LoadingSkeleton rows={1} />
+          <LoadingSkeleton rows={1} />
+          <LoadingSkeleton rows={1} />
+          <LoadingSkeleton rows={1} />
+        </div>
+        <LoadingSkeleton rows={5} />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <ErrorMessage
+        title="Erreur lors du chargement des banners"
+        buttonText="Réessayer"
+        onButtonClick={handleRefresh}
+      />
+    );
+  }
+
+  const banners = bannersData?.data || [];
+  const totalItems = bannersData?.totalItems || 0;
+  const totalPages = bannersData?.totalPages || 1;
 
   return (
     <motion.div
@@ -93,172 +258,66 @@ export default function BannersTemplate() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="@container/main flex flex-1 flex-col gap-4 ">
+      <div className="@container/main flex flex-1 flex-col gap-4">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <HugeiconsIcon
-                icon={Image01Icon}
-                strokeWidth={2}
-                className="h-5 w-5 text-primary"
-              />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Bannières</h1>
-              <p className="text-muted-foreground">
-                Gérer les bannières publicitaires
-              </p>
-            </div>
-          </div>
-          <Button>
-            <HugeiconsIcon
-              icon={Add01Icon}
-              strokeWidth={2}
-              className="h-4 w-4 mr-2"
-            />
-            Nouvelle bannière
-          </Button>
-        </motion.div>
+        <PageHeader
+          icon={Image01Icon}
+          title="Gestion des Bannières"
+          description="Gérer les bannières publicitaires de la plateforme"
+          buttonText="Nouvelle Bannière"
+          onButtonClick={() => setIsCreateDialogOpen(true)}
+          emoji="🎨"
+        />
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Total bannières</CardDescription>
-                <CardTitle className="text-2xl">{banners.length}</CardTitle>
-              </CardHeader>
-            </Card>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Actives</CardDescription>
-                <CardTitle className="text-2xl text-green-600">
-                  {
-                    banners.filter((banner) => banner.status === "active")
-                      .length
-                  }
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Programmées</CardDescription>
-                <CardTitle className="text-2xl text-blue-600">
-                  {
-                    banners.filter((banner) => banner.status === "scheduled")
-                      .length
-                  }
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Inactives</CardDescription>
-                <CardTitle className="text-2xl text-gray-600">
-                  {
-                    banners.filter((banner) => banner.status === "inactive")
-                      .length
-                  }
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </motion.div>
-        </div>
+        <BannerStatsCards banners={banners} />
 
-        {/* Banners list */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Liste des bannières</CardTitle>
-              <CardDescription>
-                Gérer vos bannières publicitaires
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {banners.map((banner, index) => (
-                  <motion.div
-                    key={banner.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 * index }}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10">
-                        <HugeiconsIcon
-                          icon={Image01Icon}
-                          strokeWidth={2}
-                          className="h-4 w-4 text-primary"
-                        />
-                      </div>
-                      <div>
-                        <div className="font-medium">{banner.title}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {banner.description} •{" "}
-                          {getPositionLabel(banner.position)}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Du {banner.startDate} au {banner.endDate}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(banner.status)}
-                      <Button variant="ghost" size="sm">
-                        <HugeiconsIcon
-                          icon={Edit01Icon}
-                          strokeWidth={2}
-                          className="h-4 w-4"
-                        />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <HugeiconsIcon
-                          icon={Delete01Icon}
-                          strokeWidth={2}
-                          className="h-4 w-4"
-                        />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Table */}
+        <BannerTable
+          banners={banners}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onCreateClick={() => setIsCreateDialogOpen(true)}
+          isDeleting={deleteMutation.isPending}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onPageChange={handlePageChange}
+        />
       </div>
+
+      {/* Dialogs */}
+      <BannerCreateDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        form={createForm}
+        onSubmit={handleCreate}
+        isSubmitting={createMutation.isPending}
+      />
+
+      <BannerEditDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedBanner(null);
+        }}
+        form={editForm}
+        onSubmit={handleUpdate}
+        isSubmitting={updateMutation.isPending}
+        selectedBanner={selectedBanner}
+      />
+      <BannerViewDialog
+        isOpen={isViewDialogOpen}
+        onClose={() => setIsViewDialogOpen(false)}
+        banner={selectedBanner}
+        onEdit={handleEdit}
+      />
+
+      {/* Dialog de confirmation */}
+      <ConfirmDialog />
     </motion.div>
   );
 }

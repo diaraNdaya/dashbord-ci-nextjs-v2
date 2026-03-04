@@ -27,6 +27,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/hooks/useConfirm";
 import type { CommissionRule } from "@/lib/types/commissions.types";
 import {
   createCommissionMutationOptions,
@@ -50,6 +51,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { PageHeader } from "../molecules";
 
 // Schema de validation pour le formulaire de commission
 const commissionSchema = z.object({
@@ -67,6 +69,7 @@ export default function ConfigCommissionsTemplate() {
   const [selectedCommission, setSelectedCommission] =
     useState<CommissionRule | null>(null);
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Queries
   const {
@@ -85,14 +88,12 @@ export default function ConfigCommissionsTemplate() {
   const createMutation = useMutation({
     ...createCommissionMutationOptions(),
     onSuccess: (data) => {
-      console.log("data", data);
       toastSuccess("Commission créée avec succès");
       setIsCreateDialogOpen(false);
       createForm.reset();
       queryClient.invalidateQueries({ queryKey: ["commissions"] });
     },
     onError: (error: Error) => {
-      console.log("error", error);
       toastErr(error.message || "Erreur lors de la création de la commission");
     },
   });
@@ -100,7 +101,6 @@ export default function ConfigCommissionsTemplate() {
   const updateMutation = useMutation({
     ...updateCommissionMutationOptions(),
     onSuccess: (data) => {
-      console.log("data", data);
       toastSuccess("Commission mise à jour avec succès");
       setIsEditDialogOpen(false);
       setSelectedCommission(null);
@@ -108,7 +108,6 @@ export default function ConfigCommissionsTemplate() {
       queryClient.invalidateQueries({ queryKey: ["commissions"] });
     },
     onError: (error: Error) => {
-      console.log("error", error);
       toastErr(
         error.message || "Erreur lors de la mise à jour de la commission",
       );
@@ -158,10 +157,16 @@ export default function ConfigCommissionsTemplate() {
     updateMutation.mutate(data);
   };
 
-  const handleDelete = (commissionId: string) => {
-    if (
-      window.confirm("Êtes-vous sûr de vouloir supprimer cette commission ?")
-    ) {
+  const handleDelete = async (commissionId: string) => {
+    const confirmed = await confirm({
+      title: "Supprimer la commission",
+      description:
+        "Êtes-vous sûr de vouloir supprimer cette commission ? Cette action est irréversible.",
+      confirmText: "Supprimer",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
       deleteMutation.mutate({ id: commissionId });
     }
   };
@@ -215,41 +220,15 @@ export default function ConfigCommissionsTemplate() {
       transition={{ duration: 0.6 }}
     >
       <div className="@container/main flex flex-1 flex-col gap-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <HugeiconsIcon
-                icon={PercentIcon}
-                strokeWidth={2}
-                className="h-5 w-5 text-primary"
-              />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">
-                Configuration des Commissions
-              </h1>
-              <p className="text-muted-foreground">
-                Gérer les taux de commission
-              </p>
-            </div>
-          </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <HugeiconsIcon
-              icon={Add01Icon}
-              strokeWidth={2}
-              className="h-4 w-4 mr-2"
-            />
-            Nouvelle Commission
-          </Button>
-        </motion.div>
+        <PageHeader
+          icon={Add01Icon}
+          title="Configuration des Commissions"
+          description="Gérer les taux de commission"
+          buttonText="Nouvelle Commission"
+          onButtonClick={() => setIsCreateDialogOpen(true)}
+          // emoji="📁"
+        />
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -529,6 +508,7 @@ export default function ConfigCommissionsTemplate() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </motion.div>
   );
 }

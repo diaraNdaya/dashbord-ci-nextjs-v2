@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toastErr } from "../molecules";
 import { Spinner } from "../ui/spinner";
 
 function applyApiErrorsToForm(
@@ -72,12 +73,8 @@ export function LoginForm({ className }: React.ComponentProps<"div">) {
   const login = useMutation({
     ...loginMutationOptions(),
     onSuccess: (result) => {
-      console.log("Root", result);
       if (!result?.success) {
-        applyApiErrorsToForm(
-          result?.error ?? { message: "Erreur de connexion" },
-          form.setError,
-        );
+        toastErr(result?.message as any);
         return;
       }
       form.reset();

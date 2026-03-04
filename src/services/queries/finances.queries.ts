@@ -11,13 +11,21 @@ export const getCommissionGlobaleQueryOptions = () => ({
   queryKey: ["finances", "commission", "globale"] as const,
   queryFn: async () => {
     const result = await getCommissionGlobaleAction();
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération de la commission globale",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération de la commission globale";
+    throw new Error(errorMessage);
   },
 });
 
@@ -45,12 +53,21 @@ export const getTransactionsQueryOptions = (
       limit,
       search,
     );
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des transactions",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des transactions";
+    throw new Error(errorMessage);
   },
 });
 
@@ -61,13 +78,21 @@ export const getCommissionEvolutionQueryOptions = (
   queryKey: ["finances", "commission", "evolution", period, date] as const,
   queryFn: async () => {
     const result = await getCommissionEvolutionAction(period, date);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération de l'évolution des commissions",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération de l'évolution des commissions";
+    throw new Error(errorMessage);
   },
 });
 
@@ -79,13 +104,21 @@ export const getCommissionSellersQueryOptions = (
   queryKey: ["finances", "commission", "sellers", page, limit] as const,
   queryFn: async () => {
     const result = await getCommissionSellersAction(page, limit);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération des commissions des vendeurs",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des commissions des vendeurs";
+    throw new Error(errorMessage);
   },
 });
 
@@ -98,12 +131,20 @@ export const getCommissionSellerByIdQueryOptions = (
   queryKey: ["finances", "commission", "seller", id, page, limit] as const,
   queryFn: async () => {
     const result = await getCommissionSellerByIdAction(id, page, limit);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération des commissions du vendeur",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des commissions du vendeur";
+    throw new Error(errorMessage);
   },
 });

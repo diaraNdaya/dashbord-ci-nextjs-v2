@@ -15,12 +15,20 @@ export const getDashboardDataQueryOptions = () => ({
   queryFn: async () => {
     const result = await getDashboardData();
 
-    if (result?.statistics) {
+    if (
+      result &&
+      typeof result === "object" &&
+      "statistics" in result &&
+      result.statistics
+    ) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la r�cup�ration des statistiques",
-    );
+
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des statistiques";
+    throw new Error(errorMessage);
   },
 });
 
@@ -28,13 +36,23 @@ export const getMetricsDataQueryOptions = () => ({
   queryKey: ["dashboard", "metrics"] as const,
   queryFn: async () => {
     const result = await getMetricsData();
-    if (result.success) {
-      return result;
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
+      return result && typeof result === "object" && "metrics" in result
+        ? result.metrics
+        : result;
     }
 
-    throw new Error(
-      result.message || "Erreur lors de la r�cup�ration des m�triques",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des métriques";
+    throw new Error(errorMessage);
   },
 });
 
@@ -45,13 +63,21 @@ export const getProductReportQueryOptions = (credentials: {
   queryKey: ["dashboard", "products", "report", credentials] as const,
   queryFn: async () => {
     const result = await getProductReport(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message || "Erreur lors de la r�cup�ration du rapport produits",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération du rapport produits";
+    throw new Error(errorMessage);
   },
 });
 
@@ -62,13 +88,21 @@ export const getSalesReportQueryOptions = (credentials: {
   queryKey: ["dashboard", "sales", "report", credentials] as const,
   queryFn: async () => {
     const result = await getSalesReport(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message || "Erreur lors de la r�cup�ration des ventes",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des ventes";
+    throw new Error(errorMessage);
   },
 });
 
@@ -79,14 +113,21 @@ export const getUserReportQueryOptions = (credentials: {
   queryKey: ["dashboard", "users", "report", credentials] as const,
   queryFn: async () => {
     const result = await getUserReport(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération du rapport utilisateurs",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération du rapport utilisateurs";
+    throw new Error(errorMessage);
   },
 });
 
@@ -97,13 +138,21 @@ export const getTopProductsByPeriodQueryOptions = (credentials: {
   queryKey: ["dashboard", "products", "top", "period", credentials] as const,
   queryFn: async () => {
     const result = await getTopProductsByPeriod(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message || "Erreur lors de la récupération des top produits",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des top produits";
+    throw new Error(errorMessage);
   },
 });
 
@@ -114,13 +163,21 @@ export const getTopSellerQueryOptions = (credentials: {
   queryKey: ["dashboard", "sellers", "top", credentials] as const,
   queryFn: async () => {
     const result = await getTopSeller(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message || "Erreur lors de la r�cup�ration des top vendeurs",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des top vendeurs";
+    throw new Error(errorMessage);
   },
 });
 
@@ -131,14 +188,21 @@ export const getTopSellerByPeriodQueryOptions = (credentials: {
   queryKey: ["dashboard", "sellers", "top", "period", credentials] as const,
   queryFn: async () => {
     const result = await getTopSellerByPeriod(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message ||
-        "Erreur lors de la r�cup�ration des top vendeurs par p�riode",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des top vendeurs par période";
+    throw new Error(errorMessage);
   },
 });
 
@@ -149,12 +213,20 @@ export const getTopCategoryQueryOptions = (credentials: {
   queryKey: ["dashboard", "categories", "top", credentials] as const,
   queryFn: async () => {
     const result = await getTopCategory(credentials);
-    if (result.success) {
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "success" in result &&
+      result.success
+    ) {
       return result;
     }
 
-    throw new Error(
-      result.message || "Erreur lors de la r�cup�ration des top cat�gories",
-    );
+    const errorMessage =
+      result && typeof result === "object" && "message" in result
+        ? result.message
+        : "Erreur lors de la récupération des top catégories";
+    throw new Error(errorMessage);
   },
 });

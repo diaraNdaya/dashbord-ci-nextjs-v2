@@ -13,10 +13,10 @@ import {
   Alert01Icon,
   Clock01Icon,
   Edit01Icon,
-  PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
+import { PageHeader } from "../molecules/PageHeader";
 
 export default function ReclamationsTemplate() {
   const reclamations = [
@@ -89,34 +89,13 @@ export default function ReclamationsTemplate() {
     >
       <div className="@container/main flex flex-1 flex-col gap-4 ">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <HugeiconsIcon
-                icon={Alert01Icon}
-                strokeWidth={2}
-                className="h-5 w-5 text-primary"
-              />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Réclamations</h1>
-              <p className="text-muted-foreground">Manage customer claims</p>
-            </div>
-          </div>
-          <Button>
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              strokeWidth={2}
-              className="h-4 w-4 mr-2"
-            />
-            New Claim
-          </Button>
-        </motion.div>
+        <PageHeader
+          icon={Alert01Icon}
+          title="Réclamations"
+          description="Gérer les réclamations des clients"
+          buttonText="Nouvelle Réclamation"
+          onButtonClick={() => {}}
+        />
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">

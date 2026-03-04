@@ -8,6 +8,7 @@ export const meQueryOptions = () => ({
   queryKey: ["me"] as const,
   queryFn: async () => {
     const result = await meAction();
+
     if (result.success) {
       return result;
     }

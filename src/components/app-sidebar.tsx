@@ -79,17 +79,27 @@ const data: { sections: NavSection[] } = {
           title: "Commandes",
           url: "/orders",
           icon: ShoppingCart01Icon,
+          items: [
+            {
+              title: "Nos commandes",
+              url: "/orders",
+            },
+            {
+              title: "Validation Commandes",
+              url: "/orders/validate-orders",
+            },
+          ],
         },
         {
           title: "Finances",
           url: "/finances",
           icon: ComputerIcon,
         },
-        {
-          title: "Commissions",
-          url: "/commissions",
-          icon: ComputerIcon,
-        },
+        // {
+        //   title: "Commissions",
+        //   url: "/commissions",
+        //   icon: ComputerIcon,
+        // },
       ],
     },
     {
@@ -117,12 +127,43 @@ const data: { sections: NavSection[] } = {
               url: "/configuration/documents",
             },
             {
+              title: "Methode de livraison",
+              url: "/configuration/shippings-methods",
+            },
+            {
+              title: "Livreurs",
+              url: "/configuration/delivery",
+            },
+            {
+              title: "Newletters",
+              url: "/configuration/newletters",
+            },
+            {
+              title: "Gestions de versions",
+              url: "/configuration/versions",
+            },
+            {
               title: "Réclamations",
               url: "/configuration/reclamations",
             },
             {
+              title: "Push",
+              url: "/configuration/push",
+            },
+            {
               title: "Bannières",
               url: "/configuration/banners",
+            },
+          ],
+        },
+        {
+          title: "Parametres",
+          url: "/settings",
+          icon: Settings01Icon,
+          items: [
+            {
+              title: "Catégories",
+              url: "/configuration/categories",
             },
           ],
         },

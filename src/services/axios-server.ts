@@ -16,7 +16,7 @@ const buildApiError = (
   status: number,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any,
-  fallbackMessage = "Une erreur s'est produite."
+  fallbackMessage = "Une erreur s'est produite.",
 ): ApiError => ({
   message: data?.message || fallbackMessage,
   status,
@@ -39,16 +39,16 @@ const handleServerError = async (response: Response): Promise<never> => {
       response.status === 403
         ? "Vous n'êtes pas autorisé à effectuer l'action."
         : response.status === 422
-        ? "Erreur de validation."
-        : "Une erreur serveur s'est produite."
-    )
+          ? "Erreur de validation."
+          : "Une erreur serveur s'est produite.",
+    ),
   );
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const serverRequest = async <T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> => {
   try {
     const jar = await cookies();
@@ -63,6 +63,8 @@ export const serverRequest = async <T = any>(
     const response = await fetch(`${endpoint}`, {
       ...options,
       headers,
+      // Ajouter un timeout de 30 secondes
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -70,10 +72,9 @@ export const serverRequest = async <T = any>(
     }
     const text = await response.text();
     return (text ? JSON.parse(text) : ({} as T)) as T;
-    
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    console.log("❌ Error:", err);
     const apiErr: ApiError = {
       message: err?.message || "Une erreur réseau s'est produite.",
       status: err?.status || 0,

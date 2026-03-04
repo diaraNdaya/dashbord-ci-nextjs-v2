@@ -3,6 +3,7 @@
 import { ErrorMessage } from "@/components/atoms/ErrorMessage";
 import { LoadingSkeleton } from "@/components/atoms/LoadingSkeleton";
 import { SafeImage } from "@/components/atoms/SafeImage";
+import { PageHeader } from "@/components/molecules/PageHeader";
 import { toastErr, toastSuccess } from "@/components/molecules/ToastCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,6 @@ import {
   EyeIcon,
   File01Icon,
   Loading03Icon,
-  PlusSignIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -169,7 +169,6 @@ export default function DocumentsTemplate() {
       ? (documentsData as any).data
       : [];
 
-  console.log("data", documents);
   const totalItems =
     documentsData && (documentsData as any).success
       ? (documentsData as any).totalItems || 0
@@ -179,7 +178,6 @@ export default function DocumentsTemplate() {
       ? (documentsData as any).totalPages || 1
       : 1;
 
-  // Calcul des statistiques
   const confirmedCount = documents.filter(
     (doc: DocumentDetails) => doc.statut === "confirm",
   ).length;
@@ -215,39 +213,14 @@ export default function DocumentsTemplate() {
       transition={{ duration: 0.6 }}
     >
       <div className="@container/main flex flex-1 flex-col gap-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <HugeiconsIcon
-                icon={File01Icon}
-                strokeWidth={2}
-                className="h-5 w-5 text-primary"
-              />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Gestion des Documents</h1>
-              <p className="text-muted-foreground">
-                Valider et gérer les documents des utilisateurs
-              </p>
-            </div>
-          </div>
-          <Button onClick={handleRefresh}>
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              strokeWidth={2}
-              className="h-4 w-4 mr-2"
-            />
-            Actualiser
-          </Button>
-        </motion.div>
+        <PageHeader
+          icon={File01Icon}
+          title="Gestion des Documents"
+          description="Valider et gérer les documents des utilisateurs"
+          buttonText="Actualiser"
+          onButtonClick={handleRefresh}
+        />
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -437,7 +410,6 @@ export default function DocumentsTemplate() {
         </motion.div>
       </div>
 
-      {/* Details Dialog */}
       <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
         <DialogContent className="w-[95%] max-w-9xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>

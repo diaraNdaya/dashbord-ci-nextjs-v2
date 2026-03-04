@@ -35,7 +35,6 @@ const emptyStats = (): DashboardStats => ({
 });
 
 const toStats = (raw: unknown): DashboardStats => {
-  // Handle the actual API response structure
   if (raw && typeof raw === "object" && "data" in raw) {
     const apiResponse = raw as {
       data?: { statistics?: Array<Record<string, unknown>> };
@@ -167,7 +166,6 @@ export function DashboardKpiRow() {
     getDashboardDataQueryOptions(),
   );
   const { data: metricsRaw } = useQuery(getMetricsDataQueryOptions());
-
   if (statsLoading) {
     return <LoadingSkeleton rows={4} />;
   }

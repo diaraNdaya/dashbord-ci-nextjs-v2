@@ -48,6 +48,30 @@ import { SafeImage } from "../atoms/SafeImage";
 import { ImageUploader } from "../molecules/file-upload";
 import { toastErr, toastSuccess } from "../molecules/ToastCard";
 
+// Type guard to check if response is successful FileUploadResponse
+const isFileUploadSuccess = (
+  response: unknown,
+): response is { url: string } => {
+  return (
+    response !== null &&
+    response !== undefined &&
+    typeof response === "object" &&
+    "url" in response &&
+    typeof (response as { url: unknown }).url === "string"
+  );
+};
+
+// Type guard to check if response is an error
+const isApiError = (response: unknown): response is { message: string } => {
+  return (
+    response !== null &&
+    response !== undefined &&
+    typeof response === "object" &&
+    "message" in response &&
+    typeof (response as { message: unknown }).message === "string"
+  );
+};
+
 const isFile = (v: unknown): v is File =>
   typeof File !== "undefined" && v instanceof File;
 
@@ -139,38 +163,30 @@ export default function CreateAndUpdateSubcategoryForm({
     getAllCategoriesQueryOptions(1, 100), // Récupérer toutes les catégories
   );
 
-  const categories = (categoriesData as any)?.success
-    ? (categoriesData as any)?.data
-    : [];
+  const categories =
+    categoriesData && "data" in categoriesData ? categoriesData.data : [];
 
   const uploadMutation = useMutation(uploadFileMutationOptions());
 
   const createMutation = useMutation({
     ...createSubCategoryMutationOptions(),
     mutationFn: async (values: CreateValues) => {
-      console.log("=== CREATE SUBCATEGORY START ===");
-      console.log("Values received:", values);
-
       let imageUrl = "";
 
       if (values.image && isFile(values.image)) {
-        console.log("Uploading image...");
-
         const uploadResponse = await uploadMutation.mutateAsync({
           file: values.image,
         });
 
-        if (uploadResponse?.success) {
-          imageUrl = (uploadResponse as any)?.data?.url;
-          console.log("Image uploaded:", imageUrl);
+        if (isFileUploadSuccess(uploadResponse)) {
+          imageUrl = uploadResponse.url;
         } else {
           console.error("Failed to upload image:", uploadResponse);
-          toastErr(
-            uploadResponse.message || "Erreur lors de l'upload de l'image",
-          );
-          throw new Error(
-            uploadResponse.message || "Erreur lors de l'upload de l'image",
-          );
+          const errorMessage = isApiError(uploadResponse)
+            ? uploadResponse.message
+            : "Erreur lors de l'upload de l'image";
+          toastErr(errorMessage);
+          throw new Error(errorMessage);
         }
       }
 
@@ -182,16 +198,11 @@ export default function CreateAndUpdateSubcategoryForm({
         url: imageUrl,
       };
 
-      console.log("Final subcategory data:", subcategoryData);
-
       return await createSubCategoryMutationOptions().mutationFn(
         subcategoryData,
       );
     },
     onSuccess: (data) => {
-      console.log("=== CREATE SUCCESS ===");
-      console.log("Response:", data);
-
       if (data?.success) {
         toastSuccess("Sous-catégorie créée avec succès");
         queryClient.invalidateQueries({ queryKey: ["subcategories"] });
@@ -199,14 +210,10 @@ export default function CreateAndUpdateSubcategoryForm({
         onSuccess?.();
         router.refresh();
       } else {
-        console.error("Create failed:", data);
         toastErr(data?.message || "Erreur lors de la création");
       }
     },
     onError: (error: unknown) => {
-      console.error("=== CREATE ERROR ===");
-      console.error("Error:", error);
-
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -221,9 +228,6 @@ export default function CreateAndUpdateSubcategoryForm({
   const updateMutation = useMutation({
     ...updateSubCategoryMutationOptions(),
     mutationFn: async (values: UpdateValues) => {
-      console.log("=== UPDATE SUBCATEGORY START ===");
-      console.log("Values received:", values);
-
       if (!subcategory?.id) {
         toastErr("ID de sous-catégorie manquant");
         return;
@@ -231,23 +235,18 @@ export default function CreateAndUpdateSubcategoryForm({
 
       let finalUrl = subcategory.url || "";
       if (values.image && isFile(values.image)) {
-        console.log("Uploading new image...");
-
         const uploadResponse = await uploadMutation.mutateAsync({
           file: values.image,
         });
 
-        if (uploadResponse.success) {
-          finalUrl = (uploadResponse as any).data.url;
-          console.log("New image uploaded:", finalUrl);
+        if (isFileUploadSuccess(uploadResponse)) {
+          finalUrl = uploadResponse.url;
         } else {
-          console.error("Failed to upload image:", uploadResponse);
-          toastErr(
-            uploadResponse.message || "Erreur lors de l'upload de l'image",
-          );
-          throw new Error(
-            uploadResponse.message || "Erreur lors de l'upload de l'image",
-          );
+          const errorMessage = isApiError(uploadResponse)
+            ? uploadResponse.message
+            : "Erreur lors de l'upload de l'image";
+          toastErr(errorMessage);
+          throw new Error(errorMessage);
         }
       }
 
@@ -281,17 +280,12 @@ export default function CreateAndUpdateSubcategoryForm({
         category_id: finalCategoryId,
       };
 
-      console.log("Final update payload:", filledPayload);
-
       return await updateSubCategoryMutationOptions().mutationFn({
         id: subcategory.id,
         data: filledPayload,
       });
     },
     onSuccess: (data) => {
-      console.log("=== UPDATE SUCCESS ===");
-      console.log("Response:", data);
-
       if (data?.success) {
         toastSuccess("Sous-catégorie modifiée avec succès");
         queryClient.invalidateQueries({ queryKey: ["subcategories"] });
@@ -319,17 +313,9 @@ export default function CreateAndUpdateSubcategoryForm({
   });
 
   const onSubmit = (values: FormValues) => {
-    console.log("=== FORM SUBMISSION DEBUG ===");
-    console.log("Form values:", values);
-    console.log("Form errors:", form.formState.errors);
-    console.log("Is editing:", isEditing);
-    console.log("Is valid:", form.formState.isValid);
-
     if (isEditing) {
-      console.log("Calling update mutation...");
       updateMutation.mutate(values as UpdateValues);
     } else {
-      console.log("Calling create mutation...");
       createMutation.mutate(values as CreateValues);
     }
   };
@@ -342,9 +328,13 @@ export default function CreateAndUpdateSubcategoryForm({
         className="w-[95%] 
     sm:max-w-lg 
     md:max-w-2xl 
-    lg:max-w-4xl overflow-y-auto"
+    lg:max-w-4xl 
+    max-h-[90vh] 
+    overflow-hidden 
+    flex 
+    flex-col"
       >
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {isEditing
               ? "Modifier la sous-catégorie"
@@ -357,31 +347,95 @@ export default function CreateAndUpdateSubcategoryForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={(e) => {
-            console.log("=== FORM SUBMIT EVENT ===");
-            console.log("Event:", e);
-            form.handleSubmit(onSubmit)(e);
-          }}
-          className="space-y-8"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex-1 overflow-y-auto px-1">
+          <form
+            onSubmit={(e) => {
+              form.handleSubmit(onSubmit)(e);
+            }}
+            className="space-y-8 py-4"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="name">
+                      Nom de la sous-catégorie
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="name"
+                        placeholder="Ex: Smartphones"
+                        {...form.register("name")}
+                      />
+                      <FieldError
+                        errors={
+                          form.formState.errors.name
+                            ? [form.formState.errors.name]
+                            : []
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="type">Type</FieldLabel>
+                    <FieldContent>
+                      <Select
+                        value={form.watch("type") || ""}
+                        onValueChange={(value) => form.setValue("type", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cosmetic">Cosmétique</SelectItem>
+                          <SelectItem value="fashion">Mode</SelectItem>
+                          <SelectItem value="electronics">
+                            Électronique
+                          </SelectItem>
+                          <SelectItem value="home">Maison</SelectItem>
+                          <SelectItem value="sports">Sports</SelectItem>
+                          <SelectItem value="books">Livres</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FieldError
+                        errors={
+                          form.formState.errors.type
+                            ? [form.formState.errors.type]
+                            : []
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+                </div>
+
                 <Field>
-                  <FieldLabel htmlFor="name">
-                    Nom de la sous-catégorie
+                  <FieldLabel htmlFor="category_id">
+                    Catégorie parent
                   </FieldLabel>
                   <FieldContent>
-                    <Input
-                      id="name"
-                      placeholder="Ex: Smartphones"
-                      {...form.register("name")}
-                    />
+                    <Select
+                      value={form.watch("category_id") || ""}
+                      onValueChange={(value) =>
+                        form.setValue("category_id", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une catégorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category: Category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FieldError
                       errors={
-                        form.formState.errors.name
-                          ? [form.formState.errors.name]
+                        form.formState.errors.category_id
+                          ? [form.formState.errors.category_id]
                           : []
                       }
                     />
@@ -389,31 +443,18 @@ export default function CreateAndUpdateSubcategoryForm({
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="type">Type</FieldLabel>
+                  <FieldLabel htmlFor="description">Description</FieldLabel>
                   <FieldContent>
-                    <Select
-                      value={form.watch("type") || ""}
-                      onValueChange={(value) => form.setValue("type", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cosmetic">Cosmétique</SelectItem>
-                        <SelectItem value="fashion">Mode</SelectItem>
-                        <SelectItem value="electronics">
-                          Électronique
-                        </SelectItem>
-                        <SelectItem value="home">Maison</SelectItem>
-                        <SelectItem value="sports">Sports</SelectItem>
-                        <SelectItem value="books">Livres</SelectItem>
-                        <SelectItem value="other">Autre</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Textarea
+                      id="description"
+                      placeholder="Description détaillée de la sous-catégorie..."
+                      className="min-h-[120px]"
+                      {...form.register("description")}
+                    />
                     <FieldError
                       errors={
-                        form.formState.errors.type
-                          ? [form.formState.errors.type]
+                        form.formState.errors.description
+                          ? [form.formState.errors.description]
                           : []
                       }
                     />
@@ -421,140 +462,95 @@ export default function CreateAndUpdateSubcategoryForm({
                 </Field>
               </div>
 
-              <Field>
-                <FieldLabel htmlFor="category_id">Catégorie parent</FieldLabel>
-                <FieldContent>
-                  <Select
-                    value={form.watch("category_id") || ""}
-                    onValueChange={(value) =>
-                      form.setValue("category_id", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner une catégorie" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category: Category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError
-                    errors={
-                      form.formState.errors.category_id
-                        ? [form.formState.errors.category_id]
-                        : []
-                    }
-                  />
-                </FieldContent>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="description">Description</FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    id="description"
-                    placeholder="Description détaillée de la sous-catégorie..."
-                    className="min-h-[120px]"
-                    {...form.register("description")}
-                  />
-                  <FieldError
-                    errors={
-                      form.formState.errors.description
-                        ? [form.formState.errors.description]
-                        : []
-                    }
-                  />
-                </FieldContent>
-              </Field>
-            </div>
-
-            <div className="space-y-6">
-              {/* Image */}
-              <Field>
-                <FieldLabel>Image de la sous-catégorie</FieldLabel>
-                <FieldContent>
-                  <ImageUploader
-                    value={(() => {
-                      const image = form.watch("image");
-                      return image ? [image] : [];
-                    })()}
-                    onChange={(files) => {
-                      const file = files[0];
-                      if (file) {
-                        form.setValue("image", file);
-                        form.clearErrors("image");
+              <div className="space-y-6">
+                {/* Image */}
+                <Field>
+                  <FieldLabel>Image de la sous-catégorie</FieldLabel>
+                  <FieldContent>
+                    <ImageUploader
+                      value={(() => {
+                        const image = form.watch("image");
+                        return image ? [image] : [];
+                      })()}
+                      onChange={(files) => {
+                        const file = files[0];
+                        if (file) {
+                          form.setValue("image", file);
+                          form.clearErrors("image");
+                        }
+                      }}
+                      maxFiles={1}
+                      maxSizeMB={10}
+                      accept="image/*"
+                      onUploadSuccess={(url) =>
+                        console.log("Image sélectionnée:", url)
                       }
-                    }}
-                    maxFiles={1}
-                    maxSizeMB={10}
-                    accept="image/*"
-                    onUploadSuccess={(url) =>
-                      console.log("Image sélectionnée:", url)
-                    }
-                    onUploadError={(error) =>
-                      console.error("Erreur sélection image:", error)
-                    }
-                  />
-                  <FieldDescription>
-                    Cette image sera utilisée pour représenter la sous-catégorie
-                  </FieldDescription>
-                  {subcategory?.url && !form.watch("image") && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-sm text-muted-foreground font-medium">
-                        Image actuelle :
-                      </p>
-                      <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-violet-vif/20">
-                        <SafeImage
-                          src={subcategory.url}
-                          alt="Image actuelle"
-                          className="w-full h-full object-cover"
-                          width={96}
-                          height={96}
-                          fallbackClassName="w-24 h-24 rounded-lg"
-                        />
+                      onUploadError={(error) =>
+                        console.error("Erreur sélection image:", error)
+                      }
+                    />
+                    <FieldDescription>
+                      Cette image sera utilisée pour représenter la
+                      sous-catégorie
+                    </FieldDescription>
+                    {subcategory?.url && !form.watch("image") && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm text-muted-foreground font-medium">
+                          Image actuelle :
+                        </p>
+                        <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-violet-vif/20">
+                          <SafeImage
+                            src={subcategory.url}
+                            alt="Image actuelle"
+                            className="w-full h-full object-cover"
+                            width={96}
+                            height={96}
+                            fallbackClassName="w-24 h-24 rounded-lg"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <FieldError
-                    errors={
-                      form.formState.errors.image
-                        ? [form.formState.errors.image]
-                        : []
-                    }
-                  />
-                </FieldContent>
-              </Field>
+                    )}
+                    <FieldError
+                      errors={
+                        form.formState.errors.image
+                          ? [form.formState.errors.image]
+                          : []
+                      }
+                    />
+                  </FieldContent>
+                </Field>
+              </div>
             </div>
-          </div>
+          </form>
+        </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-violet-vif hover:bg-violet-vif/90 min-w-[140px]"
-            >
-              {isSubmitting ? (
-                <>
-                  <HugeiconsIcon
-                    icon={Loading03Icon}
-                    className="h-4 w-4 mr-2 animate-spin"
-                  />
-                  {isEditing ? "Modification..." : "Création..."}
-                </>
-              ) : isEditing ? (
-                "Modifier la sous-catégorie"
-              ) : (
-                "Créer la sous-catégorie"
-              )}
-            </Button>
-          </div>
-        </form>
+        <div className="flex-shrink-0 flex justify-end gap-3 pt-6 border-t bg-background">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            disabled={isSubmitting}
+            className="bg-violet-vif hover:bg-violet-vif/90 min-w-[140px]"
+            onClick={() => {
+              // Déclencher la soumission du formulaire
+              form.handleSubmit(onSubmit)();
+            }}
+          >
+            {isSubmitting ? (
+              <>
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  className="h-4 w-4 mr-2 animate-spin"
+                />
+                {isEditing ? "Modification..." : "Création..."}
+              </>
+            ) : isEditing ? (
+              "Modifier la sous-catégorie"
+            ) : (
+              "Créer la sous-catégorie"
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

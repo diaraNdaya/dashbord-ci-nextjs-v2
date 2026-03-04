@@ -5,6 +5,7 @@ import type {
   CategoryCreateResponse,
   CategoryCredentials,
   CategoryDeleteResponse,
+  CategorySearchParams,
   CategoryUpdateParams,
   FileUploadResponse,
   SubcategoryApiResponse,
@@ -47,7 +48,6 @@ export async function updateCategoryAction(
   id: string,
   data: CategoryUpdateParams,
 ) {
-  console.log("data", data);
   return safeAction<CategoryDeleteResponse>(async () => {
     return serverRequest<CategoryDeleteResponse>(
       endpoints.CATEGORY.updateCategory(id),
@@ -129,7 +129,6 @@ export async function deleteSubCategoryAction(id: string) {
 
 export async function uploadFileAction(file: File) {
   return safeAction<FileUploadResponse>(async () => {
-    console.log("File", file);
     const formData = new FormData();
     formData.append("file", file);
 

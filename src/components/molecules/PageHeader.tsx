@@ -6,11 +6,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 
 interface PageHeaderProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any; // HugeIcons icon type
   title: string;
   description: string;
-  buttonText: string;
-  onButtonClick: () => void;
+  buttonText?: string;
+  onButtonClick?: () => void;
   emoji?: string;
 }
 
@@ -27,7 +28,7 @@ export function PageHeader({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex items-center justify-between"
+      className={`grid items-center gap-6 ${buttonText && onButtonClick ? "grid-cols-[1fr_auto]" : "grid-cols-1"}`}
     >
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-vif/10 dark:bg-violet-vif/5">
@@ -40,13 +41,15 @@ export function PageHeader({
           <p className="text-muted-foreground">{description}</p>
         </div>
       </div>
-      <Button
-        onClick={onButtonClick}
-        className="bg-violet-vif hover:bg-violet-vif/90"
-      >
-        <HugeiconsIcon icon={Add01Icon} className="h-4 w-4 mr-2" />
-        {buttonText}
-      </Button>
+      {buttonText && onButtonClick && (
+        <Button
+          onClick={onButtonClick}
+          className="bg-violet-vif hover:bg-violet-vif/90 whitespace-nowrap"
+        >
+          <HugeiconsIcon icon={Add01Icon} className="h-4 w-4 mr-2" />
+          {buttonText}
+        </Button>
+      )}
     </motion.div>
   );
 }

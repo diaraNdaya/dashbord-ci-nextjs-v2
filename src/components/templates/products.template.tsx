@@ -31,6 +31,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
+import { useConfirm } from "@/hooks/useConfirm";
 import type { Product } from "@/lib/types/products.types";
 import {
   deleteProductMutationOptions,
@@ -46,6 +47,7 @@ export default function ProductsTemplate() {
   const [viewMode, setViewMode] = useState<"all" | "top">("all"); // New state for switching between all and top products
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Queries
   const { data: productsData, isLoading: isLoadingProducts } = useQuery(
@@ -56,7 +58,6 @@ export default function ProductsTemplate() {
     getTopProductsQueryOptions(),
   );
 
-  // Mutations
   const deleteProductMutation = useMutation({
     ...deleteProductMutationOptions(),
     onSuccess: () => {
@@ -72,8 +73,16 @@ export default function ProductsTemplate() {
     router.push(`/products/${productId}`);
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
+  const handleDeleteProduct = async (productId: string) => {
+    const confirmed = await confirm({
+      title: "Supprimer le produit",
+      description:
+        "Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.",
+      confirmText: "Supprimer",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
       deleteProductMutation.mutate(productId);
     }
   };
@@ -103,7 +112,6 @@ export default function ProductsTemplate() {
     setActiveTab("all"); // Reset tab when switching view mode
   };
 
-  // Extract products array and pagination info
   const allProducts: Product[] = (() => {
     if (!productsData) return [];
     if (Array.isArray(productsData)) return productsData;
@@ -381,6 +389,7 @@ export default function ProductsTemplate() {
           </Card>
         </motion.div>
       </div>
+      <ConfirmDialog />
     </motion.div>
   );
 }

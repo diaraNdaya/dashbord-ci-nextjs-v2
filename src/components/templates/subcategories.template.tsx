@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/molecules/PageHeader";
 import CreateAndUpdateSubcategoryForm from "@/components/organisms/create-and-update-subcategory-form";
 import { SubcategoryTable } from "@/components/organisms/SubcategoryTable";
 import { SubcategoryViewDialog } from "@/components/organisms/SubcategoryViewDialog";
+import { useConfirm } from "@/hooks/useConfirm";
 import type {
   Subcategory,
   SubcategorySearchParams,
@@ -22,6 +23,7 @@ import { toastErr, toastSuccess } from "../molecules/ToastCard";
 
 export default function SubcategoriesTemplate() {
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchParams, setSearchParams] = useState<SubcategorySearchParams>({});
@@ -37,13 +39,18 @@ export default function SubcategoriesTemplate() {
 
   const deleteMutation = useMutation({
     ...deleteSubCategoryMutationOptions(),
-    onSuccess: (data: any) => {
-      if (data.success) {
+    onSuccess: (data: unknown) => {
+      if (
+        data &&
+        typeof data === "object" &&
+        "success" in data &&
+        data.success
+      ) {
         toastSuccess("Sous-catégorie supprimée avec succès");
         queryClient.invalidateQueries({ queryKey: ["subcategories"] });
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toastErr(error.message || "Erreur lors de la suppression");
     },
   });
@@ -56,8 +63,16 @@ export default function SubcategoriesTemplate() {
     setEditingSubcategory(subcategory);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer cette sous-catégorie ?")) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirm({
+      title: "Supprimer la sous-catégorie",
+      description:
+        "Êtes-vous sûr de vouloir supprimer cette sous-catégorie ? Cette action est irréversible.",
+      confirmText: "Supprimer",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
       deleteMutation.mutate({ id });
     }
   };
@@ -79,16 +94,21 @@ export default function SubcategoriesTemplate() {
 
   const handleSearch = (query: string) => {
     setSearchParams({ search: query.trim() || undefined });
-    setPage(1); // Reset to first page when searching
+    setPage(1);
   };
 
-  // Calculs des statistiques
-  const subcategories = (subcategoriesData as any)?.success
-    ? (subcategoriesData as any)?.data
-    : [];
-  const totalItems = (subcategoriesData as any)?.success
-    ? (subcategoriesData as any)?.totalItems
-    : 0;
+  const subcategories =
+    subcategoriesData &&
+    typeof subcategoriesData === "object" &&
+    "data" in subcategoriesData
+      ? subcategoriesData.data
+      : [];
+  const totalItems =
+    subcategoriesData &&
+    typeof subcategoriesData === "object" &&
+    "totalItems" in subcategoriesData
+      ? subcategoriesData.totalItems
+      : 0;
 
   // Pour les subcategories, on n'a pas de productCount, donc on utilise d'autres métriques
   const totalCategories = new Set(
@@ -157,6 +177,7 @@ export default function SubcategoriesTemplate() {
         isOpen={!!viewingSubcategory}
         onClose={handleCloseView}
       />
+      <ConfirmDialog />
     </motion.div>
   );
 }

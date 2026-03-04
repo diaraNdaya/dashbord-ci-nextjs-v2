@@ -14,8 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TablePaginationProps {
   page: number;
@@ -49,7 +48,7 @@ export default function TablePagination({
   };
 
   return (
-    <div className="flex w-full items-center justify-between gap-2">
+    <div className="flex w-full items-center justify-between gap-2 mt-4">
       <div className="flex items-center gap-2">
         <Label className="whitespace-nowrap text-sm">Lignes par page:</Label>
         <Select
@@ -82,22 +81,22 @@ export default function TablePagination({
               <Button
                 aria-label="Page précédente"
                 disabled={page === 1}
-                size="icon"
+                size="default"
                 variant="ghost"
                 onClick={handlePreviousPage}
               >
-                <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
             </PaginationItem>
             <PaginationItem>
               <Button
                 aria-label="Page suivante"
                 disabled={page >= totalPages}
-                size="icon"
+                size="default"
                 variant="ghost"
                 onClick={handleNextPage}
               >
-                <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </PaginationItem>
           </PaginationContent>

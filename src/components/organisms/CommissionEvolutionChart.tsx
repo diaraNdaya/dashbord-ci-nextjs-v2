@@ -42,24 +42,29 @@ export function CommissionEvolutionChart({
   } = useQuery(getCommissionEvolutionQueryOptions(period, date));
 
   const chartData = useMemo(() => {
-    if (
-      !evolutionData ||
-      !(evolutionData as any)?.success ||
-      !(evolutionData as any)?.data
-    ) {
+    let dataArray: any[] = [];
+    if (Array.isArray(evolutionData)) {
+      dataArray = evolutionData;
+    } else if (evolutionData && typeof evolutionData === "object") {
+      if ("success" in evolutionData && "data" in evolutionData) {
+        const responseData = (evolutionData as any).data;
+        dataArray = Array.isArray(responseData) ? responseData : [responseData];
+      } else if ("data" in evolutionData) {
+        // Just data property
+        const responseData = (evolutionData as any).data;
+        dataArray = Array.isArray(responseData) ? responseData : [responseData];
+      }
+    }
+
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
       return [];
     }
 
-    const responseData = (evolutionData as any).data;
-
-    // Handle both single object and array responses
-    const dataArray = Array.isArray(responseData)
-      ? responseData
-      : [responseData];
-
     return dataArray.map((item: any) => ({
-      period: item.date || item.period,
-      total: Number(item.commission || item.total || 0),
+      period: item.period || item.date || "N/A",
+      total: Number(item.total || item.commission || 0),
+      tva: Number(item.tva || 0),
+      net: Number(item.net || 0),
       transactions: Number(item.transactions || 0),
     }));
   }, [evolutionData]);
@@ -76,7 +81,6 @@ export function CommissionEvolutionChart({
     const avgCommission =
       chartData.length > 0 ? totalCommissions / chartData.length : 0;
 
-    // Calculate trend (last 7 vs previous 7 periods)
     const recentData = chartData.slice(-7);
     const previousData = chartData.slice(-14, -7);
 

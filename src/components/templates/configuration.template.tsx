@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/molecules/PageHeader";
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Settings01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 import Link from "next/link";
 
@@ -50,6 +50,12 @@ export default function ConfigurationTemplate() {
       href: "/configuration/banners",
       icon: "🎨",
     },
+    {
+      title: "Notifications Push",
+      description: "Envoyer des notifications push aux utilisateurs",
+      href: "/configuration/push",
+      icon: "🔔",
+    },
   ];
 
   return (
@@ -61,25 +67,11 @@ export default function ConfigurationTemplate() {
     >
       <div className="@container/main flex flex-1 flex-col gap-4 ">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-3"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <HugeiconsIcon
-              icon={Settings01Icon}
-              className="h-5 w-5 text-primary"
-            />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Configuration</h1>
-            <p className="text-muted-foreground">
-              Configurez les paramètres de votre application
-            </p>
-          </div>
-        </motion.div>
+        <PageHeader
+          icon={Settings01Icon}
+          title="Configuration"
+          description="Configurez les paramètres de votre application"
+        />
 
         {/* Configuration sections */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

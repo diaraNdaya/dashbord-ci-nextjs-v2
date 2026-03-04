@@ -29,12 +29,23 @@ export const getCommissionsSellersQueryOptions = (
   queryKey: ["commissions", "sellers", page, limit, searchParams] as const,
   queryFn: async () => {
     const result = await getCommissionsSellersAction(page, limit, searchParams);
-    if (result.success) {
-      return result;
+
+    // Handle deeply nested structure: result.data.data.data
+    if (result && typeof result === "object" && "data" in result) {
+      const level1 = result.data;
+      if (level1 && typeof level1 === "object" && "data" in level1) {
+        const level2 = level1.data;
+        if (level2 && typeof level2 === "object" && "data" in level2) {
+          return level2; // This contains {data: [], totalItems, totalPages, etc.}
+        }
+
+        return level1;
+      }
+
+      return result.data;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des commissions",
-    );
+
+    return result;
   },
 });
 
@@ -43,13 +54,11 @@ export const getCommissionGlobaleQueryOptions = () => ({
   queryKey: ["commissions", "globale"] as const,
   queryFn: async () => {
     const result = await getCommissionGlobaleAction();
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération de la commission globale",
-    );
+    return result;
   },
 });
 
@@ -58,12 +67,11 @@ export const getCommissionConfigQueryOptions = () => ({
   queryKey: ["commissions", "config"] as const,
   queryFn: async () => {
     const result = await getCommissionConfigAction();
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération de la configuration",
-    );
+    return result;
   },
 });
 
@@ -75,16 +83,19 @@ export const getCommissionEvolutionQueryOptions = (
   queryKey: ["commissions", "evolution", period, date] as const,
   queryFn: async () => {
     const result = await getCommissionEvolutionAction(period, date);
-    if (result.success) {
+    if (result && typeof result === "object" && "data" in result) {
+      return result.data;
+    }
+
+    // Handle direct array response
+    if (Array.isArray(result)) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération de l'évolution",
-    );
+
+    return result;
   },
 });
 
-// Query options pour récupérer les commissions d'un vendeur
 export const getCommissionsBySellerIdQueryOptions = (
   id: string,
   page: number,
@@ -93,13 +104,11 @@ export const getCommissionsBySellerIdQueryOptions = (
   queryKey: ["commissions", "seller", id, page, limit] as const,
   queryFn: async () => {
     const result = await getCommissionsBySellerIdAction(id, page, limit);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération des commissions du vendeur",
-    );
+    return result;
   },
 });
 
@@ -108,12 +117,11 @@ export const getAllDocumentsQueryOptions = (page: number, limit: number) => ({
   queryKey: ["documents", page, limit] as const,
   queryFn: async () => {
     const result = await getAllDocumentsAction(page, limit);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des documents",
-    );
+    return result;
   },
 });
 
@@ -126,12 +134,11 @@ export const getAllVerifiedSellersQueryOptions = (
   queryKey: ["sellers", "verified", page, limit, statut] as const,
   queryFn: async () => {
     const result = await getAllVerifiedSellersAction(page, limit, statut);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des vendeurs vérifiés",
-    );
+    return result;
   },
 });
 
@@ -144,12 +151,11 @@ export const getAllVerifiedCustomersQueryOptions = (
   queryKey: ["customers", "verified", page, limit, statut] as const,
   queryFn: async () => {
     const result = await getAllVerifiedCustomersAction(page, limit, statut);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des clients vérifiés",
-    );
+    return result;
   },
 });
 
@@ -158,12 +164,11 @@ export const getDeletedSellersQueryOptions = (page: number, limit: number) => ({
   queryKey: ["sellers", "deleted", page, limit] as const,
   queryFn: async () => {
     const result = await getDeletedSellersAction(page, limit);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la récupération des vendeurs supprimés",
-    );
+    return result;
   },
 });
 
@@ -172,41 +177,35 @@ export const getCommissionCountQueryOptions = () => ({
   queryKey: ["commissions", "count"] as const,
   queryFn: async () => {
     const result = await getCommissionCountAction();
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message ||
-        "Erreur lors de la récupération du nombre de commissions",
-    );
+    return result;
   },
 });
 
 // Mutation options pour créer une commission
 export const createCommissionMutationOptions = () => ({
   mutationFn: async (data: CommissionCreateData) => {
-    console.log("rate", data);
     const result = await createCommissionAction(data);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la création de la commission",
-    );
+    return result;
   },
 });
 
 // Mutation options pour mettre à jour une commission
 export const updateCommissionMutationOptions = () => ({
   mutationFn: async (data: CommissionUpdateData) => {
-    console.log("rate", data);
     const result = await updateCommissionAction(data);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la mise à jour de la commission",
-    );
+    return result;
   },
 });
 
@@ -214,12 +213,11 @@ export const updateCommissionMutationOptions = () => ({
 export const deleteCommissionMutationOptions = () => ({
   mutationFn: async ({ id }: { id: string }) => {
     const result = await deleteCommissionAction(id);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la suppression de la commission",
-    );
+    return result;
   },
 });
 
@@ -227,11 +225,10 @@ export const deleteCommissionMutationOptions = () => ({
 export const validateDocumentMutationOptions = () => ({
   mutationFn: async ({ id, statut }: { id: string; statut: string }) => {
     const result = await validateDocumentAction(id, statut);
-    if (result.success) {
+    // Handle ActionResult type
+    if (result && typeof result === "object" && "data" in result) {
       return result;
     }
-    throw new Error(
-      result.message || "Erreur lors de la validation du document",
-    );
+    return result;
   },
 });

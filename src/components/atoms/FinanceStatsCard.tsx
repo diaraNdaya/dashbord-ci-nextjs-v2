@@ -1,9 +1,12 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { IconType } from "@hugeicons/core-free-icons";
+import { CreditCardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
+
+// Define the icon type based on the actual icon exports
+type IconType = typeof CreditCardIcon;
 
 interface FinanceStatsCardProps {
   title: string;

@@ -26,7 +26,7 @@ export function SidebarContentHeader() {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b">
       <SidebarTrigger
-        className="-ml-1"
+        className=""
         style={{ opacity: 1, visibility: "visible" }}
       />
       <Separator

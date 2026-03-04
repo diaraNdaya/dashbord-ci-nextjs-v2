@@ -16,6 +16,7 @@ import type {
 } from "@/lib/types/user.type";
 import { serverRequest } from "@/services/server/axios-server.server";
 import { safeAction } from "@/services/server/safe-action.server";
+import { ApiResponse } from "../api.type";
 import { endpoints } from "../endpoints";
 
 export async function fetchUsersAction(
@@ -116,5 +117,21 @@ export async function getOneSellerAction(id: string) {
         method: "GET",
       },
     );
+  });
+}
+export async function blockedSellerAction(id: string, status: boolean) {
+  return safeAction<ApiResponse<ValidationResponse>>(async () => {
+    const response = await serverRequest<ApiResponse<ValidationResponse>>(
+      endpoints.SELLER.blockedSeller(id),
+      {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    return response;
   });
 }

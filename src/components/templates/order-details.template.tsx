@@ -38,7 +38,6 @@ export default function OrderDetailsTemplate({
   }
 
   if (error || !orderResponse) {
-    console.log("Error or no response:", { error, orderResponse });
     return (
       <ErrorMessage
         title="Commande introuvable"
@@ -50,15 +49,23 @@ export default function OrderDetailsTemplate({
 
   // Extract the order data from the nested response structure
   let orderData;
-  if (orderResponse.data && orderResponse.data.data) {
-    orderData = orderResponse.data.data;
-  } else if (orderResponse.data) {
-    orderData = orderResponse.data;
+
+  if (orderResponse && typeof orderResponse === "object") {
+    if ("data" in orderResponse && orderResponse.data) {
+      if (
+        typeof orderResponse.data === "object" &&
+        "data" in orderResponse.data
+      ) {
+        orderData = (orderResponse.data as { data: unknown }).data;
+      } else {
+        orderData = orderResponse.data;
+      }
+    } else {
+      orderData = orderResponse;
+    }
   } else {
     orderData = orderResponse;
   }
-
-  console.log("Extracted order data:", orderData);
 
   if (!orderData) {
     return (
@@ -111,7 +118,8 @@ export default function OrderDetailsTemplate({
           </div>
         </motion.div>
 
-        <OrderDetailsContent order={orderData} orderId={orderId} />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <OrderDetailsContent order={orderData as any} orderId={orderId} />
       </div>
     </motion.div>
   );

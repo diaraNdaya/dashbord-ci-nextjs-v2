@@ -68,9 +68,7 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
   } = useQuery(getTransactionsQueryOptions(period, date, page, limit));
 
   const paymentAnalysis = useMemo(() => {
-    // Vérifier si nous avons des données valides
     if (!isTransactionsResponse(transactionsData)) {
-      console.log("No valid transactions response");
       return {
         data: [],
         totalTransactions: 0,
@@ -79,10 +77,8 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     }
 
     const transactions = transactionsData.data.data;
-    console.log("transactions array:", transactions);
 
     if (!Array.isArray(transactions) || transactions.length === 0) {
-      console.log("No transactions array or empty");
       return {
         data: [],
         totalTransactions: 0,
@@ -93,7 +89,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
     const methodGroups: Record<string, { count: number; amount: number }> = {};
     let totalAmount = 0;
 
-    console.log("Processing transactions:", transactions);
     transactions.forEach((transaction, index) => {
       console.log(`Transaction ${index}:`, transaction);
       const method = transaction.payment_method || "card";
@@ -108,8 +103,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
       totalAmount += amount;
     });
 
-    console.log("Method groups:", methodGroups);
-
     const data = Object.entries(methodGroups).map(([method, stats]) => ({
       method,
       count: stats.count,
@@ -117,8 +110,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
       percentage: (stats.count / transactions.length) * 100,
       color: colorByMethod[method] || colorByMethod.card,
     }));
-
-    console.log("Final payment analysis data:", data);
 
     return {
       data,
@@ -233,7 +224,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
           </div>
         </div>
 
-        {/* Statistiques */}
         {!isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <motion.div
@@ -293,7 +283,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
           </div>
         ) : paymentAnalysis.data.length > 0 ? (
           <div className="space-y-6">
-            {/* Graphique en donut avec Chart.js ou version simplifiée */}
             <div className="flex items-center justify-center">
               <div className="relative w-80 h-80">
                 {paymentAnalysis.data.length === 1 ? (
@@ -325,24 +314,21 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
                     </foreignObject>
                   </svg>
                 ) : (
-                  // Cas normal : plusieurs méthodes de paiement
                   <svg viewBox="0 0 200 200" className="w-full h-full">
                     {paymentAnalysis.data.map((item, index) => {
                       const total = paymentAnalysis.totalTransactions;
                       const percentage = (item.count / total) * 100;
 
-                      // Calculer l'angle de départ (cumul des segments précédents)
                       const previousPercentage = paymentAnalysis.data
                         .slice(0, index)
                         .reduce((sum, d) => sum + (d.count / total) * 100, 0);
 
-                      const startAngle = (previousPercentage / 100) * 360 - 90; // -90 pour commencer en haut
+                      const startAngle = (previousPercentage / 100) * 360 - 90;
                       const endAngle =
                         ((previousPercentage + percentage) / 100) * 360 - 90;
 
                       const largeArcFlag = percentage > 50 ? 1 : 0;
 
-                      // Coordonnées du cercle extérieur
                       const x1 =
                         100 + 60 * Math.cos((startAngle * Math.PI) / 180);
                       const y1 =
@@ -352,7 +338,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
                       const y2 =
                         100 + 60 * Math.sin((endAngle * Math.PI) / 180);
 
-                      // Coordonnées du cercle intérieur
                       const x3 =
                         100 + 30 * Math.cos((endAngle * Math.PI) / 180);
                       const y3 =
@@ -387,7 +372,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
                       );
                     })}
 
-                    {/* Centre du donut */}
                     <circle
                       cx="100"
                       cy="100"
@@ -397,7 +381,6 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
                       strokeWidth="2"
                     />
 
-                    {/* Icône au centre */}
                     <foreignObject x="85" y="85" width="30" height="30">
                       <div className="flex items-center justify-center w-full h-full">
                         <HugeiconsIcon
@@ -411,39 +394,40 @@ export function PaymentMethodChart({ className }: PaymentMethodChartProps) {
               </div>
             </div>
 
-            {/* Légende détaillée */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-3">
               {paymentAnalysis.data.map((item, index) => (
                 <motion.div
                   key={item.method}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-4 h-4 rounded-full"
+                      className="w-4 h-4 rounded-full shrink-0"
                       style={{ backgroundColor: item.color }}
                     />
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon
                         icon={getMethodIcon(item.method)}
-                        className="h-4 w-4 text-muted-foreground"
+                        className="h-5 w-5 text-muted-foreground shrink-0"
                       />
-                      <span className="font-medium">
-                        {getMethodLabel(item.method)}
-                      </span>
+                      <div>
+                        <div className="font-medium text-base">
+                          {getMethodLabel(item.method)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.count} transaction{item.count > 1 ? "s" : ""}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold">
+                  <div className="text-right shrink-0">
+                    <div className="text-lg font-bold">
                       {item.percentage.toFixed(1)}%
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {item.count} transaction{item.count > 1 ? "s" : ""}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
                       {formatPrice(item.amount)}
                     </div>
                   </div>

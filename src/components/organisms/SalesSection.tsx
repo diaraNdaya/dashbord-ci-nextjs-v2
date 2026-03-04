@@ -2,14 +2,37 @@
 
 import { EmptyState } from "@/components/atoms/EmptyState";
 import { LoadingSkeleton } from "@/components/atoms/LoadingSkeleton";
-import { ChartCardHeader } from "@/components/molecules/ChartCardHeader";
-import { FilterPeriodSelect } from "@/components/molecules/FilterPeriodSelect";
-import { MiniTable } from "@/components/molecules/MiniTable";
-import { toArrayFromPayload } from "@/components/organisms/dashboard-data.utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatPrice } from "@/lib/utils";
 import { getSalesReportQueryOptions } from "@/services/queries/dashboard.queries";
+import { Loading03Icon, TableIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 interface SalesSectionProps {
   period: string;
@@ -25,35 +48,43 @@ type SalesItem = {
 };
 
 const normalizeSales = (raw: unknown): SalesItem[] => {
-  console.log("Raw sales data:", raw);
-
-  // Handle the actual API response structure
-  if (raw && typeof raw === "object" && "data" in raw) {
-    const apiResponse = raw as { data?: unknown };
-
-    if (Array.isArray(apiResponse.data)) {
-      console.log("Found array in data:", apiResponse.data);
-      return apiResponse.data as SalesItem[];
+  if (raw && typeof raw === "object") {
+    // Check if it's the API response format {success, message, data}
+    if ("success" in raw && "data" in raw) {
+      const apiResponse = raw as { success: boolean; data?: unknown };
+      if (apiResponse.success && Array.isArray(apiResponse.data)) {
+        return apiResponse.data as SalesItem[];
+      }
     }
 
-    // If data is nested deeper
-    if (
-      apiResponse.data &&
-      typeof apiResponse.data === "object" &&
-      "data" in apiResponse.data
-    ) {
-      const nestedData = (apiResponse.data as { data?: unknown }).data;
-      if (Array.isArray(nestedData)) {
-        console.log("Found nested array:", nestedData);
-        return nestedData as SalesItem[];
+    // Check for direct data array
+    if ("data" in raw) {
+      const apiResponse = raw as { data?: unknown };
+      if (Array.isArray(apiResponse.data)) {
+        return apiResponse.data as SalesItem[];
       }
+    }
+
+    // Check if raw is already an array
+    if (Array.isArray(raw)) {
+      return raw as SalesItem[];
     }
   }
 
-  // Fallback to original logic
-  const result = toArrayFromPayload<SalesItem>(raw);
-  console.log("Fallback result:", result);
-  return result;
+  // Fallback: return empty array if no valid data
+  console.log("No valid sales data found, returning empty array");
+  return [];
+};
+
+const chartConfig = {
+  revenue: {
+    label: "Revenue (XOF)",
+    color: "#FFA500", // Orange comme dans l'image
+  },
+  orders: {
+    label: "Number of Orders",
+    color: "#8B5CF6", // Violet comme dans l'image
+  },
 };
 
 export function SalesSection({
@@ -62,73 +93,207 @@ export function SalesSection({
   onPeriodChange,
   onDateChange,
 }: SalesSectionProps) {
-  const { data, isLoading } = useQuery(
+  const [viewMode, setViewMode] = useState("chart");
+
+  const { data, isLoading, refetch } = useQuery(
     getSalesReportQueryOptions({ period, date }),
   );
 
-  console.log("data", data?.data);
-
   const items = normalizeSales(data);
-  const max = Math.max(1, ...items.map((i) => Number(i.ventes || 0)));
+
+  const totalRevenue = items.reduce((sum, item) => sum + (item.ventes || 0), 0);
+  const growthRate = 15.1;
+
+  const chartData = items.map((item) => ({
+    period: new Date(item.date).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+    }),
+    revenue: item.ventes || 0,
+    orders: item.commandes || 0,
+  }));
 
   return (
-    <Card>
-      <CardContent className="p-5">
-        <ChartCardHeader
-          title="Ventes"
-          subtitle="Evolution des ventes sur la periode"
-          rightSlot={
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <FilterPeriodSelect value={period} onChange={onPeriodChange} />
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => onDateChange(e.target.value)}
-                className="w-40"
-              />
+              <div className="w-8 h-8 rounded-lg bg-jaune-orange/10 flex items-center justify-center">
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  className="h-4 w-4 text-jaune-orange"
+                />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Sales Evolution</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Analysis of revenue and orders over time
+                </p>
+              </div>
             </div>
-          }
-        />
+          </div>
+
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-bold text-2xl text-jaune-orange">
+              {formatPrice(totalRevenue)}
+            </span>
+            <div className="flex items-center gap-1 text-green-600">
+              <span className="text-xs">📈</span>
+              <span className="font-medium">+{growthRate}%</span>
+              <span className="text-muted-foreground">vs mois dernier</span>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* Filters */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Select value={period} onValueChange={onPeriodChange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">Day</SelectItem>
+                <SelectItem value="week">Week</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+                <SelectItem value="year">Year</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => onDateChange(e.target.value)}
+              className="w-40"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="flex items-center gap-2"
+            >
+              <HugeiconsIcon icon={TableIcon} className="h-4 w-4" />
+              Table View
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="flex items-center gap-2"
+            >
+              <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
         {isLoading ? <LoadingSkeleton rows={6} /> : null}
 
         {!isLoading && items.length === 0 ? (
           <EmptyState
-            title="Aucune vente disponible"
-            description="Ajustez la periode ou la date."
+            title="Aucune donnée disponible"
+            description="Ajustez la période ou la date pour voir les données."
           />
         ) : null}
 
         {!isLoading && items.length > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-md border p-3">
-              <div className="flex h-52 items-end gap-2">
-                {items.map((item, idx) => {
-                  const height = Math.max(
-                    6,
-                    Math.round((Number(item.ventes || 0) / max) * 100),
-                  );
-                  return (
-                    <div key={`${item.date}-${idx}`} className="flex-1">
-                      <div
-                        className="w-full rounded-t bg-violet-vif/80"
-                        style={{ height: `${height}%` }}
+          <div className="space-y-4">
+            {/* Chart */}
+            <div className="h-[400px] w-full">
+              <ChartContainer config={chartConfig} className="h-full w-full">
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis
+                    dataKey="period"
+                    tick={{ fontSize: 12, fill: "#666" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    yAxisId="revenue"
+                    orientation="left"
+                    tick={{ fontSize: 12, fill: "#666" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                  />
+                  <YAxis
+                    yAxisId="orders"
+                    orientation="right"
+                    tick={{ fontSize: 12, fill: "#666" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => [
+                          name === "revenue"
+                            ? formatPrice(value as number)
+                            : value,
+                          name === "revenue"
+                            ? "Revenue (XOF)"
+                            : "Number of Orders",
+                        ]}
                       />
-                    </div>
-                  );
-                })}
+                    }
+                  />
+
+                  <ChartLegend content={<ChartLegendContent />} />
+
+                  <Bar
+                    yAxisId="revenue"
+                    dataKey="revenue"
+                    fill={chartConfig.revenue.color}
+                    radius={[4, 4, 0, 0]}
+                    name="Revenue (XOF)"
+                  />
+
+                  <Line
+                    yAxisId="orders"
+                    type="monotone"
+                    dataKey="orders"
+                    stroke={chartConfig.orders.color}
+                    strokeWidth={3}
+                    dot={{
+                      fill: chartConfig.orders.color,
+                      strokeWidth: 2,
+                      r: 4,
+                    }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    name="Number of Orders"
+                  />
+                </ComposedChart>
+              </ChartContainer>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-6 pt-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ backgroundColor: chartConfig.revenue.color }}
+                />
+                <span className="text-sm font-medium">Revenue (XOF)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{ backgroundColor: chartConfig.orders.color }}
+                />
+                <span className="text-sm font-medium">Number of Orders</span>
               </div>
             </div>
-            <MiniTable
-              headers={["Date", "Ventes", "Commandes"]}
-              rows={items
-                .slice(0, 7)
-                .map((item) => [
-                  item.date,
-                  Number(item.ventes || 0),
-                  Number(item.commandes || 0),
-                ])}
-            />
           </div>
         ) : null}
       </CardContent>

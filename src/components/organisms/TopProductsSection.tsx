@@ -21,14 +21,11 @@ type ProductItem = {
 };
 
 const normalizeProducts = (raw: unknown): ProductItem[] => {
-  console.log("Raw products data:", raw);
-
   // Handle the actual API response structure
   if (raw && typeof raw === "object" && "data" in raw) {
     const apiResponse = raw as { data?: unknown };
 
     if (Array.isArray(apiResponse.data)) {
-      console.log("Found products array in data:", apiResponse.data);
       return apiResponse.data as ProductItem[];
     }
 
@@ -40,7 +37,6 @@ const normalizeProducts = (raw: unknown): ProductItem[] => {
     ) {
       const nestedData = (apiResponse.data as { data?: unknown }).data;
       if (Array.isArray(nestedData)) {
-        console.log("Found nested products array:", nestedData);
         return nestedData as ProductItem[];
       }
     }
@@ -48,7 +44,7 @@ const normalizeProducts = (raw: unknown): ProductItem[] => {
 
   // Fallback to original logic
   const result = toArrayFromPayload<ProductItem>(raw);
-  console.log("Products fallback result:", result);
+
   return result;
 };
 
@@ -56,6 +52,7 @@ export function TopProductsSection({ period, date }: TopProductsSectionProps) {
   const { data, isLoading } = useQuery(
     getTopProductsByPeriodQueryOptions({ period, date }),
   );
+
   const items = normalizeProducts(data);
   const max = Math.max(1, ...items.map((i) => Number(i.revenus || 0)));
 

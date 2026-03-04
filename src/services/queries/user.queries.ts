@@ -12,6 +12,7 @@ import {
 import { fetchOrdersAction } from "@/services/actions/orders.actions";
 import {
   blockUserAction,
+  blockedSellerAction,
   fetchSellersAction,
   fetchTopSellersAction,
   fetchUsersAction,
@@ -109,7 +110,7 @@ export const getOneCustomerQueryOptions = (id: string) => ({
       );
     }
 
-    const payload = result?.data as {
+    const payload = result as {
       customer?: Customer;
       data?: Customer;
     };
@@ -137,7 +138,7 @@ export const getOneSellerQueryOptions = (id: string) => ({
       );
     }
 
-    const payload = result?.data as {
+    const payload = result as {
       seller?: Seller;
       data?: Seller;
     };
@@ -205,6 +206,11 @@ export const getAllVerifiedCustomersQueryOptions = (
 // Mutations
 export const blockUserMutationOptions = () => ({
   mutationFn: blockUserAction,
+});
+
+export const blockedSellerMutationOptions = () => ({
+  mutationFn: ({ id, status }: { id: string; status: boolean }) =>
+    blockedSellerAction(id, status),
 });
 
 export const validateDocumentMutationOptions = () => ({

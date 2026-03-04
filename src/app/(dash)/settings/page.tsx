@@ -9,7 +9,6 @@ export const metadata = metaObject("Paramètres");
 
 export default async function SettingsPage() {
   const qc = getQueryClient();
-
   await qc.prefetchQuery(meQueryOptions());
 
   return (

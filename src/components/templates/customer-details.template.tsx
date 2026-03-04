@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -17,7 +17,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { getOneCustomerQueryOptions } from "@/services/queries/user.queries";
+import { useConfirm } from "@/hooks/useConfirm";
+import {
+  blockUserMutationOptions,
+  getOneCustomerQueryOptions,
+} from "@/services/queries/user.queries";
 import {
   ArrowLeft01Icon,
   Copy01Icon,
@@ -26,6 +30,7 @@ import {
   User02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { toastErr, toastSuccess } from "../molecules";
 
 interface CustomerDetailsTemplateProps {
   customerId: string;
@@ -48,7 +53,7 @@ function CopyButton({ value, label }: { value?: string; label: string }) {
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
-            size="icon"
+            size="default"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             disabled={!value}
             onClick={async () => {
@@ -107,13 +112,49 @@ export default function CustomerDetailsTemplate({
   customerId,
 }: CustomerDetailsTemplateProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
+
   const {
     data: customer,
     isLoading,
     error,
   } = useQuery(getOneCustomerQueryOptions(customerId));
 
+  const blockUserMutation = useMutation({
+    ...blockUserMutationOptions(),
+    onSuccess: (result: { success?: boolean; message?: string }) => {
+      if (result.success) {
+        queryClient.invalidateQueries({
+          queryKey: ["users", "customers", customerId],
+        });
+        toastSuccess(result?.message as any);
+      } else {
+        toastErr(result?.message as any);
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Erreur lors du blocage/déblocage:", error);
+    },
+  });
+
   const user = customer?.user;
+
+  const handleToggleBlock = async () => {
+    const isCurrentlyBlocked = user?.isBlocked; // isBlocked true = bloqué
+    const action = isCurrentlyBlocked ? "débloquer" : "bloquer";
+
+    const confirmed = await confirm({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} le client`,
+      description: `Êtes-vous sûr de vouloir ${action} ce client ?`,
+      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+      variant: "destructive",
+    });
+
+    if (confirmed && user?.id) {
+      blockUserMutation.mutate(user.id);
+    }
+  };
 
   const badges = useMemo(() => {
     if (!customer || !user) return [];
@@ -127,8 +168,8 @@ export default function CustomerDetailsTemplate({
         label: user.is_active ? "Actif" : "Inactif",
       },
       {
-        ok: !user.isBlocked,
-        label: user.isBlocked ? "Non bloqué" : "Bloqué",
+        ok: !user.isBlocked, // isBlocked false = non bloqué (ok)
+        label: user.isBlocked ? "Bloqué" : "Non bloqué",
       },
       { ok: true, label: user.provider ?? "EMAIL" },
     ];
@@ -178,7 +219,7 @@ export default function CustomerDetailsTemplate({
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="default"
                         className="h-8 w-8 shrink-0"
                         onClick={() => router.back()}
                         aria-label="Retour"
@@ -216,24 +257,33 @@ export default function CustomerDetailsTemplate({
 
             {/* RIGHT (actions) */}
             <div className="flex w-full flex-col gap-2 md:w-[280px]">
-              <Button
-                variant="outline"
-                className="w-full border-violet-500/40 text-violet-200 hover:bg-violet-500/10"
-              >
-                <HugeiconsIcon icon={Shield01Icon} className="mr-2 h-4 w-4" />
-                {user.isBlocked ? "Débloquer" : "Bloquer"}
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full border-violet-500/40 text-violet-200 hover:bg-violet-500/10"
-              >
-                {user.is_active ? "Désactiver" : "Activer"}
-              </Button>
-
-              <Button className="w-full bg-violet-600 text-white hover:bg-violet-700">
-                Marquer vérifié
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleBlock}
+                  disabled={blockUserMutation.isPending}
+                  className={`flex-1 ${
+                    user?.isBlocked
+                      ? "border-green-500/40 text-green-600 hover:bg-green-500/10"
+                      : "border-red-500/40 text-red-600 hover:bg-red-500/10"
+                  }`}
+                >
+                  <HugeiconsIcon icon={Shield01Icon} className="mr-2 h-4 w-4" />
+                  {user?.isBlocked ? "Débloquer" : "Bloquer"}
+                </Button>
+                {/* <Button
+                  variant="outline"
+                  size="sm"
+                  className={`flex-1 ${
+                    user.is_active
+                      ? "border-orange-500/40 text-orange-600 hover:bg-orange-500/10"
+                      : "border-green-500/40 text-green-600 hover:bg-green-500/10"
+                  }`}
+                >
+                  {user.is_active ? "Désactiver" : "Activer"}
+                </Button> */}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -361,6 +411,7 @@ export default function CustomerDetailsTemplate({
           </Card>
         </div>
       </div>
+      <ConfirmDialog />
     </motion.div>
   );
 }

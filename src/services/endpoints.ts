@@ -1,5 +1,7 @@
-export const BASE_URL = process.env.API_BASE_URL;
-export const BASE_URL_DELIVERY = process.env.NEXT_PUBLIC_API_BASE_URL_DELIVERY;
+export const BASE_URL =
+  process.env.API_BASE_URL || "https://api-ci.ndaya.com/v2";
+export const BASE_URL_DELIVERY =
+  process.env.API_BASE_URL_DELIVERY || "https://delivery.ndaya.com/api/v1";
 
 export const endpoints = {
   AUTH: {
@@ -48,7 +50,9 @@ export const endpoints = {
     },
     topSeller: () => `${BASE_URL}/sellers/topSeller/`,
     getOneSeller: (id: string) => `${BASE_URL}/sellers/${id}`,
-    sellCount: () => `${BASE_URL}/ssellers/admin`,
+    // blockedSeller: (id: string) => `${BASE_URL}/sellers/block/${id}`,
+    blockedSeller: (id: string) => `${BASE_URL}/users/block/${id}`,
+    sellCount: () => `${BASE_URL}/sellers/admin`,
   },
   PRODUCT: {
     allProduct: (page?: number, limit?: number) =>
@@ -57,6 +61,9 @@ export const endpoints = {
     deleteOneProduct: (id: string) => `${BASE_URL}/products/${id}`,
     getProductBySeller: (id: string, page: number, limit: number) =>
       `${BASE_URL}/products/${id}/seller?page=${page}&limit=${limit}`,
+    updateProduct: (id: string) => `${BASE_URL}/admins/product-updated/${id}`,
+    blockedProduct: (id: string) => `${BASE_URL}/admins/blocked-product/${id}`,
+    breakProduct: (id: string) => `${BASE_URL}/sellers/breackup/${id}`,
   },
   ORDERS: {
     allOrders: (page?: number, limit?: number, statut?: string) => {
@@ -74,6 +81,36 @@ export const endpoints = {
       `${BASE_URL}/products/top?page=${page}&limit=${limit}`,
     seller: () => `${BASE_URL}/sellers/topSeller/`,
     topCategory: () => `${BASE_URL}/categories/top`,
+  },
+  SHIPPING: {
+    all: (page?: number, limit?: number) => {
+      const params = new URLSearchParams();
+      if (page !== undefined) params.append("page", page.toString());
+      if (limit !== undefined) params.append("limit", limit.toString());
+      const queryString = params.toString();
+      return `${BASE_URL}/shipping-methods${queryString ? `?${queryString}` : ""}`;
+    },
+    getOne: (id: string) => `${BASE_URL}/shipping-methods/${id}`,
+    updateOne: (id: string) => `${BASE_URL}/shipping-methods/${id}`,
+    deleteOne: (id: string) => `${BASE_URL}/shipping-methods/${id}`,
+    create: `${BASE_URL}/shipping-methods`,
+  },
+  DELIVERY: {
+    createUserDelivery: `${BASE_URL_DELIVERY}/users`,
+    updateUserDelivery: (id: string) => `${BASE_URL_DELIVERY}/users/${id}`,
+    deleteUserDelivery: (id: string) => `${BASE_URL_DELIVERY}/users/${id}`,
+    getAllDeliveries: (page: number, limit: number) =>
+      `${BASE_URL_DELIVERY}/users?page=${page}&limit=${limit}`,
+    deliveryAvailable: () => `${BASE_URL_DELIVERY}/delivery/admin/all`,
+    orderDelivery: (id: string) => `${BASE_URL_DELIVERY}/delivery/admin/${id}`,
+  },
+  PURCHASE: {
+    allPurchase: () => `${BASE_URL}/purchase/all`,
+    updateOrderBySeller: (id: string) =>
+      `${BASE_URL}/admins/validate-purchase/${id}`,
+  },
+  PUSH: {
+    create: `${BASE_URL}/admins/push`,
   },
   DASHBOARD: {
     getDashboardData: () => `${BASE_URL}/admins/statistics`,
@@ -161,15 +198,11 @@ export const endpoints = {
       return url;
     },
   },
-  DELIVERY: {
-    createUserDelivery: `${BASE_URL_DELIVERY}/users`,
-    getAllDeliveries: (page: number, limit: number) =>
-      `${BASE_URL_DELIVERY}/users?page=${page}&limit=${limit}`,
-    deliveryAvailable: () => `${BASE_URL_DELIVERY}/delivery/admin/all`,
-    orderDelivery: (id: string) => `${BASE_URL_DELIVERY}/delivery/admin/${id}`,
-  },
   NEWLETTER: {
-    getAll: (page: number, limit: number) => `${BASE_URL}/newsletter/community`,
+    getAll: (page: number, limit: number) =>
+      `${BASE_URL}/newsletter/community?page=${page}&limit=${limit}`,
+    getOne: (id: string) => `${BASE_URL}/newsletter/${id}`,
+    deleteOne: (id: string) => `${BASE_URL}/newsletter/${id}`,
   },
   BANNER: {
     getAll: (page: number, limit: number) =>

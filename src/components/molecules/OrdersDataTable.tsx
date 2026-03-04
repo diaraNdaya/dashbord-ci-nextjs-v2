@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Order } from "@/lib/types/orders.type";
+import { formatPrice } from "@/lib/utils";
 
 interface OrdersDataTableProps {
   data: Order[];
@@ -122,11 +123,7 @@ export function OrdersDataTable({
       cell: ({ row }) => {
         const amount = row.getValue("totalAmount") as number;
         const currency = row.original.currency || "FCFA";
-        return (
-          <div className="font-medium">
-            {amount?.toLocaleString()} {currency}
-          </div>
-        );
+        return <div className="font-medium">{formatPrice(amount)}</div>;
       },
     },
     {

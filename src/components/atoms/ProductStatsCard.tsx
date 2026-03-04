@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { IconType } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 
@@ -10,7 +9,7 @@ interface ProductStatsCardProps {
   value: string | number;
   subtitle: string;
   trend?: string;
-  icon: IconType;
+  icon: any;
   variant?: "default" | "success" | "warning" | "danger";
   index?: number;
 }

@@ -24,7 +24,15 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 
 export default function ProfileTemplate() {
-  const { data: currentUser, isLoading } = useQuery(meQueryOptions());
+  const { data: currentUserResponse, isLoading } = useQuery(meQueryOptions());
+
+  // Properly handle ActionResult type
+  const currentUser =
+    currentUserResponse &&
+    typeof currentUserResponse === "object" &&
+    "user" in currentUserResponse
+      ? currentUserResponse.user
+      : null;
 
   if (isLoading) {
     return <div>Chargement...</div>;

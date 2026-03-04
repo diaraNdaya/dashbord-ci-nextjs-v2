@@ -15,10 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Transaction } from "@/services/actions/finances.actions";
+import { getCommissionsSellersQueryOptions } from "@/services/queries/commission.queries";
 import { getDashboardDataQueryOptions } from "@/services/queries/dashboard.queries";
 import {
   getCommissionGlobaleQueryOptions,
-  getCommissionSellersQueryOptions,
   getTransactionsQueryOptions,
 } from "@/services/queries/finances.queries";
 import {
@@ -33,6 +34,28 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 
+// Type definitions for better type safety
+interface SellerCommission {
+  id: string;
+  seller_name: string;
+  commission_rate: number;
+  commission_amount: number;
+  total_sales: number;
+}
+
+interface CommissionSellersResponse {
+  data: SellerCommission[];
+  totalItems: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+interface TransactionResponse {
+  data: { data: Transaction[] };
+  totalItems: number;
+}
+
 const getToday = () => new Date().toISOString().slice(0, 10);
 
 export default function FinancesTemplate() {
@@ -42,18 +65,20 @@ export default function FinancesTemplate() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
+  // Pagination séparée pour les commissions des vendeurs
+  const [sellersPage, setSellersPage] = useState(1);
+  const [sellersLimit, setSellersLimit] = useState(10);
+
   const { data: commissionData, isLoading: isLoadingCommission } = useQuery(
     getCommissionGlobaleQueryOptions(),
   );
-
-  console.log("commissionData", commissionData);
 
   const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery(
     getTransactionsQueryOptions(period, date, page, limit),
   );
 
   const { data: sellersCommissionData, isLoading: isLoadingSellers } = useQuery(
-    getCommissionSellersQueryOptions(page, limit),
+    getCommissionsSellersQueryOptions(sellersPage, sellersLimit),
   );
 
   const { data: dashboardData } = useQuery(getDashboardDataQueryOptions());
@@ -63,44 +88,39 @@ export default function FinancesTemplate() {
   };
 
   const stats = useMemo(() => {
-    const commission = (commissionData as any)?.data?.commission || 0;
-    const tva = (commissionData as any)?.data?.tva || 0;
+    const commission =
+      (commissionData as { data?: { commission?: number } })?.data
+        ?.commission || 0;
+    const tva = (commissionData as { data?: { tva?: number } })?.data?.tva || 0;
 
     let totalRevenue = 0;
     let totalClients = 0;
     let totalOrders = 0;
 
-    const dashboardStats = dashboardData?.statistics;
-    console.log("dashboardStats", dashboardStats);
+    const dashboardStats = (
+      dashboardData as {
+        statistics?: Array<{ title?: string; value?: string | number }>;
+      }
+    )?.statistics;
+
     if (dashboardStats && Array.isArray(dashboardStats)) {
-      // Chercher le chiffre d'affaires
       const revenueStats = dashboardStats.find(
-        (stat: any) =>
+        (stat) =>
           stat.title?.toLowerCase().includes("chiffre") &&
           stat.title?.toLowerCase().includes("affaires"),
       );
       totalRevenue = Number(revenueStats?.value || 0);
 
-      const clientStats = dashboardStats.find((stat: any) =>
+      const clientStats = dashboardStats.find((stat) =>
         stat.title?.toLowerCase().includes("clients"),
       );
       totalClients = Number(clientStats?.value || 0);
 
-      // Chercher le nombre de commandes
-      const orderStats = dashboardStats.find((stat: any) =>
+      const orderStats = dashboardStats.find((stat) =>
         stat.title?.toLowerCase().includes("commandes"),
       );
       totalOrders = Number(orderStats?.value || 0);
-
-      console.log("Found stats:", { revenueStats, clientStats, orderStats });
     }
-
-    console.log("Final calculated stats:", {
-      totalRevenue,
-      totalClients,
-      totalOrders,
-      totalCommissions: commission + tva,
-    });
 
     return {
       totalRevenue,
@@ -118,8 +138,26 @@ export default function FinancesTemplate() {
     }).format(amount);
   };
 
-  const isLoading = isLoadingCommission || isLoadingTransactions;
+  const getSellersData = (): CommissionSellersResponse | null => {
+    if (!sellersCommissionData) return null;
 
+    const data = sellersCommissionData as unknown;
+    if (
+      data &&
+      typeof data === "object" &&
+      "data" in data &&
+      "totalPages" in data &&
+      "totalItems" in data
+    ) {
+      return data as CommissionSellersResponse;
+    }
+
+    return null;
+  };
+
+  const sellersData = getSellersData();
+
+  const isLoading = isLoadingCommission || isLoadingTransactions;
   return (
     <motion.div
       className="flex flex-1 flex-col"
@@ -242,7 +280,6 @@ export default function FinancesTemplate() {
           <PaymentMethodChart />
         </div>
 
-        {/* Transactions Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -255,22 +292,24 @@ export default function FinancesTemplate() {
             <CardContent>
               <TransactionsDataTable
                 transactions={
-                  (transactionsData as any)?.data?.data
-                    ? (transactionsData as any).data.data
-                    : []
+                  (transactionsData as TransactionResponse | undefined)?.data
+                    ?.data || []
                 }
                 isLoading={isLoadingTransactions}
                 period={period}
                 date={date}
                 onPeriodChange={setPeriod}
                 onDateChange={setDate}
-                totalItems={(transactionsData as any)?.totalItems || 0}
+                totalItems={
+                  (transactionsData as TransactionResponse | undefined)
+                    ?.totalItems || 0
+                }
                 currentPage={page}
                 itemsPerPage={limit}
                 onPageChange={setPage}
                 onItemsPerPageChange={(newLimit) => {
                   setLimit(newLimit);
-                  setPage(1); // Reset to first page when changing items per page
+                  setPage(1);
                 }}
               />
             </CardContent>
@@ -285,59 +324,162 @@ export default function FinancesTemplate() {
         >
           <Card>
             <CardHeader>
-              <CardTitle>Commissions des vendeurs</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Commissions des vendeurs</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={sellersLimit.toString()}
+                    onValueChange={(value) => {
+                      setSellersLimit(Number(value));
+                      setSellersPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">
+                    par page
+                  </span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoadingSellers ? (
                 <LoadingSkeleton rows={6} />
-              ) : sellersCommissionData &&
-                Array.isArray(sellersCommissionData) &&
-                sellersCommissionData.length > 0 ? (
-                <div className="space-y-3">
-                  {sellersCommissionData
-                    .slice(0, 8)
-                    .map(
-                      (seller: {
-                        id: string;
-                        seller_name: string;
-                        commission_rate: number;
-                        commission_amount: number;
-                        total_sales: number;
-                      }) => (
-                        <div
-                          key={seller.id}
-                          className="flex items-center justify-between p-3 rounded-lg border"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-bleu-doux/10 flex items-center justify-center">
-                              <span className="font-semibold text-bleu-doux">
-                                {seller.seller_name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium">
-                                {seller.seller_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Taux: {seller.commission_rate}%
-                              </p>
-                            </div>
+              ) : sellersData &&
+                sellersData.data &&
+                sellersData.data.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {sellersData.data.map((seller) => (
+                      <div
+                        key={seller.id}
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-bleu-doux/10 flex items-center justify-center">
+                            <span className="font-semibold text-bleu-doux text-lg">
+                              {seller.seller_name.charAt(0).toUpperCase()}
+                            </span>
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold">
-                              {formatCurrency(seller.commission_amount)}
+                          <div>
+                            <p className="font-medium text-base">
+                              {seller.seller_name}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              Ventes: {formatCurrency(seller.total_sales)}
+                            <p className="text-sm text-muted-foreground">
+                              Taux de commission: {seller.commission_rate}%
                             </p>
                           </div>
                         </div>
-                      ),
-                    )}
+                        <div className="text-right">
+                          <p className="font-semibold text-lg">
+                            {formatCurrency(seller.commission_amount)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Ventes totales: {formatCurrency(seller.total_sales)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {sellersData.totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="text-sm text-muted-foreground">
+                        Affichage de {(sellersPage - 1) * sellersLimit + 1} à{" "}
+                        {Math.min(
+                          sellersPage * sellersLimit,
+                          sellersData.totalItems,
+                        )}{" "}
+                        sur {sellersData.totalItems} vendeurs
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setSellersPage(Math.max(1, sellersPage - 1))
+                          }
+                          disabled={sellersPage <= 1}
+                        >
+                          Précédent
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from(
+                            { length: Math.min(5, sellersData.totalPages) },
+                            (_, i) => {
+                              const pageNum = i + 1;
+                              return (
+                                <Button
+                                  key={pageNum}
+                                  variant={
+                                    sellersPage === pageNum
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  size="sm"
+                                  onClick={() => setSellersPage(pageNum)}
+                                  className="w-8 h-8 p-0"
+                                >
+                                  {pageNum}
+                                </Button>
+                              );
+                            },
+                          )}
+                          {sellersData.totalPages > 5 && (
+                            <>
+                              <span className="text-muted-foreground">...</span>
+                              <Button
+                                variant={
+                                  sellersPage === sellersData.totalPages
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() =>
+                                  setSellersPage(sellersData.totalPages)
+                                }
+                                className="w-8 h-8 p-0"
+                              >
+                                {sellersData.totalPages}
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setSellersPage(
+                              Math.min(sellersData.totalPages, sellersPage + 1),
+                            )
+                          }
+                          disabled={sellersPage >= sellersData.totalPages}
+                        >
+                          Suivant
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex h-32 items-center justify-center text-muted-foreground">
-                  Aucune commission de vendeur disponible
+                  <div className="text-center">
+                    <p className="text-lg font-medium">
+                      Aucune commission de vendeur disponible
+                    </p>
+                    <p className="text-sm">
+                      Les commissions apparaîtront ici une fois générées
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>

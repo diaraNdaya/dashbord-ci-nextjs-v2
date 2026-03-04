@@ -6,17 +6,17 @@ import { cookies } from "next/headers";
 import { LoginCredentials } from "../api.type";
 import { endpoints } from "../endpoints";
 
-type MeData = { user: Profile };
+export type MeData = { success: boolean; user: Profile; message?: string };
 
 export async function loginAction(input: LoginCredentials) {
   return safeAction<LoginResponse>(async () => {
-    const res = await serverRequest<LoginResponse>(
+    const res = (await serverRequest<LoginResponse>(
       `${endpoints.AUTH.login()}`,
       {
         method: "POST",
         body: JSON.stringify(input),
       },
-    );
+    )) as LoginResponse;
 
     const cookiesStore = await cookies();
 
@@ -25,7 +25,7 @@ export async function loginAction(input: LoginCredentials) {
         "Accès refusé : Vous n'êtes pas autorisé à accéder à cette application. Seuls les administrateurs peuvent se connecter.",
       );
     }
-    const token = res.accessToken;
+    const token = res?.accessToken;
     if (token) {
       cookiesStore.set("accessToken", token, {
         httpOnly: true,

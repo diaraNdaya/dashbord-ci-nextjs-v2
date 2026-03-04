@@ -6,6 +6,8 @@ import { serverRequest } from "@/services/server/axios-server.server";
 import { safeAction } from "@/services/server/safe-action.server";
 
 interface DashboardStats {
+  statistics?: any;
+  message?: string;
   totalUsers: number;
   totalOrders: number;
   totalRevenue: number;
@@ -87,12 +89,9 @@ export async function getDashboardData() {
 
 export async function getMetricsData() {
   return safeAction<MetricsData>(async () => {
-    return serverRequest<MetricsData>(
-      endpoints.DASHBOARD.getMetricsData(),
-      {
-        method: "GET",
-      },
-    );
+    return serverRequest<MetricsData>(endpoints.DASHBOARD.getMetricsData(), {
+      method: "GET",
+    });
   });
 }
 

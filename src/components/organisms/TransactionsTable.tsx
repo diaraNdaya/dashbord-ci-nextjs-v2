@@ -221,7 +221,7 @@ export default function TransactionsTable({
                 <Button
                   aria-label="Page précédente"
                   disabled={currentPage === 1}
-                  size="icon"
+                  size="default"
                   variant="ghost"
                   onClick={() => onPageChange(currentPage - 1)}
                 >
@@ -232,7 +232,7 @@ export default function TransactionsTable({
                 <Button
                   aria-label="Page suivante"
                   disabled={currentPage >= totalPages}
-                  size="icon"
+                  size="default"
                   variant="ghost"
                   onClick={() => onPageChange(currentPage + 1)}
                 >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -17,7 +17,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { getOneSellerQueryOptions } from "@/services/queries/user.queries";
+import { useConfirm } from "@/hooks/useConfirm";
+import {
+  blockedSellerMutationOptions,
+  getOneSellerQueryOptions,
+} from "@/services/queries/user.queries";
 import {
   ArrowLeft01Icon,
   Copy01Icon,
@@ -25,6 +29,7 @@ import {
   ShoppingBag01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { toastErr, toastSuccess } from "../molecules";
 
 interface SellerDetailsTemplateProps {
   sellerId: string;
@@ -47,7 +52,7 @@ function CopyButton({ value, label }: { value?: string; label: string }) {
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
-            size="icon"
+            size="default"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             disabled={!value}
             onClick={async () => {
@@ -106,13 +111,59 @@ export default function SellerDetailsTemplate({
   sellerId,
 }: SellerDetailsTemplateProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
+
   const {
     data: seller,
     isLoading,
     error,
   } = useQuery(getOneSellerQueryOptions(sellerId));
 
+  const blockedSellerMutation = useMutation({
+    ...blockedSellerMutationOptions(),
+    onSuccess: (result) => {
+      if (result.success) {
+        // Force refetch des données
+        queryClient.invalidateQueries({
+          queryKey: ["users", "sellers", sellerId],
+        });
+        queryClient.refetchQueries({
+          queryKey: ["users", "sellers", sellerId],
+        });
+        toastSuccess("Vendeur bloqué/débloqué avec succès");
+      } else {
+        toastErr(result?.message || "Erreur inconnue");
+      }
+    },
+    onError: (error: Error) => {
+      toastErr(error.message);
+      console.error("Erreur lors du blocage/déblocage:", error);
+    },
+  });
+
   const user = seller?.user;
+
+  const handleToggleBlock = async () => {
+    const isCurrentlyBlocked = user?.isBlocked; // isBlocked true = bloqué
+    const action = isCurrentlyBlocked ? "débloquer" : "bloquer";
+
+    const newStatus = !isCurrentlyBlocked;
+
+    const confirmed = await confirm({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} le vendeur`,
+      description: `Êtes-vous sûr de vouloir ${action} ce vendeur ?`,
+      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+      variant: "destructive",
+    });
+
+    if (confirmed && user?.id) {
+      blockedSellerMutation.mutate({
+        id: user.id,
+        status: newStatus,
+      });
+    }
+  };
 
   const badges = useMemo(() => {
     if (!seller || !user) return [];
@@ -126,7 +177,7 @@ export default function SellerDetailsTemplate({
         label: user.is_active ? "Actif" : "Inactif",
       },
       {
-        ok: !user.isBlocked,
+        ok: !user.isBlocked, // isBlocked false = non bloqué (ok), true = bloqué (pas ok)
         label: user.isBlocked ? "Bloqué" : "Non bloqué",
       },
       { ok: true, label: user.provider ?? "EMAIL" },
@@ -177,7 +228,7 @@ export default function SellerDetailsTemplate({
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="default"
                         className="h-8 w-8 shrink-0"
                         onClick={() => router.back()}
                         aria-label="Retour"
@@ -217,32 +268,40 @@ export default function SellerDetailsTemplate({
 
             {/* RIGHT (actions) */}
             <div className="flex w-full flex-col gap-2 md:w-[280px]">
-              <Button
-                variant="outline"
-                className="w-full border-violet-500/40 text-violet-200 hover:bg-violet-500/10"
-              >
-                <HugeiconsIcon icon={Shield01Icon} className="mr-2 h-4 w-4" />
-                {user.isBlocked ? "Débloquer" : "Bloquer"}
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full border-violet-500/40 text-violet-200 hover:bg-violet-500/10"
-              >
-                {user.is_active ? "Désactiver" : "Activer"}
-              </Button>
-
-              <Button className="w-full bg-violet-600 text-white hover:bg-violet-700">
-                Marquer vérifié
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleBlock}
+                  disabled={blockedSellerMutation.isPending}
+                  className={`flex-1 ${
+                    user?.isBlocked
+                      ? "border-green-500/40 text-green-600 hover:bg-green-500/10"
+                      : "border-red-500/40 text-red-600 hover:bg-red-500/10"
+                  }`}
+                >
+                  <HugeiconsIcon icon={Shield01Icon} className="mr-2 h-4 w-4" />
+                  {user?.isBlocked ? "Débloquer" : "Bloquer"}
+                </Button>
+                {/* 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`flex-1 ${
+                    user?.is_active
+                      ? "border-orange-500/40 text-orange-600 hover:bg-orange-500/10"
+                      : "border-green-500/40 text-green-600 hover:bg-green-500/10"
+                  }`}
+                >
+                  {user?.is_active ? "Désactiver" : "Activer"}
+                </Button> */}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Contenu */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main */}
         <div className="space-y-6 lg:col-span-2">
           <Card className="border-violet-500/10">
             <CardHeader>
@@ -276,7 +335,7 @@ export default function SellerDetailsTemplate({
             </CardHeader>
             <CardContent className="space-y-4">
               <FieldRow label="Vérifié" value={yesNo(seller.isVerified)} />
-              <FieldRow label="Bloqué" value={yesNo(user.isBlocked)} />
+              <FieldRow label="Bloqué" value={yesNo(user?.isBlocked)} />
               <Separator />
               <FieldRow
                 label="Inscription"
@@ -290,7 +349,6 @@ export default function SellerDetailsTemplate({
           </Card>
         </div>
 
-        {/* Side */}
         <div className="space-y-6">
           <Card className="border-violet-500/10">
             <CardHeader>
@@ -315,13 +373,14 @@ export default function SellerDetailsTemplate({
               <CardTitle>Statut compte</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FieldRow label="Actif" value={yesNo(user.is_active)} />
-              <FieldRow label="Bloqué" value={yesNo(user.isBlocked)} />
-              <FieldRow label="Supprimé" value={yesNo(user.isDeleted)} />
+              <FieldRow label="Actif" value={yesNo(user?.is_active)} />
+              <FieldRow label="Bloqué" value={yesNo(user?.isBlocked)} />
+              <FieldRow label="Supprimé" value={yesNo(user?.isDeleted)} />
             </CardContent>
           </Card>
         </div>
       </div>
+      <ConfirmDialog />
     </motion.div>
   );
 }

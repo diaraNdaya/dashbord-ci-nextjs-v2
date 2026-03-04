@@ -16,7 +16,6 @@ export default async function SellerDetailsPage({
 }: SellerDetailsPageProps) {
   const { id } = await params;
   const qc = getQueryClient();
-
   await qc.prefetchQuery(meQueryOptions());
 
   return (

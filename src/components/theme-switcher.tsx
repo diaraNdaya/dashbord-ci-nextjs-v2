@@ -23,7 +23,7 @@ export function ThemeSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="default"
           className="theme-switcher-button border border-border/50 hover:border-border hover:bg-accent"
         >
           <HugeiconsIcon

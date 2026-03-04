@@ -14,8 +14,7 @@ export interface Seller {
   user_id: string;
   store_name: string;
   business_address: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  company_logo?: any;
+  company_logo?: string;
   subscriptions: number;
   subscribes: number;
   likes: number;
@@ -95,7 +94,7 @@ export interface userBlockedData {
   isBlocked: boolean;
   isDeleted: boolean;
   provider: string;
-  socialId?: any;
+  socialId?: string;
   password_hash: string;
   clientStripeId: string;
   status: boolean;
@@ -103,15 +102,15 @@ export interface userBlockedData {
   createdAt: string;
   updatedAt: string;
   Customers: Customers;
-  Seller: Seller;
+  Seller: SellerProfile;
 }
 
-export interface Seller {
+export interface SellerProfile {
   id: string;
   user_id: string;
   store_name: string;
   business_address: string;
-  company_logo: string;
+  company_logo?: string;
   subscriptions: number;
   subscribes: number;
   likes: number;

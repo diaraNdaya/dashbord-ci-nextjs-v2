@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import "server-only";
-import { ApiError, ApiResponse } from "./../api.type";
+import { ApiError } from "./../api.type";
 
 export class APIError extends Error {
   status: number;
@@ -41,7 +41,7 @@ export async function serverRequest<T>(
   endpoint: string,
   options: RequestInit = {},
   config: ServerRequestConfig = {},
-): Promise<ApiResponse<T>> {
+): Promise<T> {
   const cookiesStore = await cookies();
   const tokenCookieName = config.tokenCookieName ?? "accessToken";
   const accessToken = cookiesStore.get(tokenCookieName)?.value;

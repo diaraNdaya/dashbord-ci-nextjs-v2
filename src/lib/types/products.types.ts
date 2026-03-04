@@ -124,6 +124,11 @@ export interface ProductBySellerParams {
   page: number;
   limit: number;
 }
+export interface UpdateProductCredentials {
+  category_Id?: string;
+  subCategory_Id?: string;
+  seller_Id?: string;
+}
 
 // Type pour les réponses de suppression
 export interface ProductDeleteResponse {

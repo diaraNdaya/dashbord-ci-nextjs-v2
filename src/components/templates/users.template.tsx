@@ -12,23 +12,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download, ShoppingBag, UserCheck, Users, UserX } from "lucide-react";
 
-import {
-  ShoppingBag01Icon,
-  UserBlock01Icon,
-  UserCheck01Icon,
-  UserMultiple02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-
+import { useConfirm } from "@/hooks/useConfirm";
 import type { Customer, Seller, userBlockedData } from "@/lib/types/index";
-import type { UserTableCategory, UserTableRow } from "@/lib/types/user-table.type";
+import type {
+  UserTableCategory,
+  UserTableRow,
+} from "@/lib/types/user-table.type";
 import {
   blockUserMutationOptions,
   fetchSellersQueryOptions,
   fetchUsersBlockedQueryOptions,
   fetchUsersQueryOptions,
 } from "@/services/queries/user.queries";
+import * as XLSX from "xlsx";
 import { toastErr, toastSuccess } from "../molecules/ToastCard";
 
 type ActiveTab = "all" | "verified" | "unverified" | "blocked";
@@ -97,7 +95,9 @@ const mapBlockedUserToRow = (blockedUser: userBlockedData): UserTableRow => {
       "",
     city: blockedUser.city ?? "",
     createdAt: blockedUser.createdAt,
-    isVerified: Boolean(sellerProfile?.isVerified ?? customerProfile?.isVerified),
+    isVerified: Boolean(
+      sellerProfile?.isVerified ?? customerProfile?.isVerified,
+    ),
     isBlocked: Boolean(blockedUser.isBlocked),
     avatar: sellerProfile?.company_logo ?? null,
   };
@@ -116,6 +116,7 @@ export default function UsersTemplate() {
 
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -123,7 +124,6 @@ export default function UsersTemplate() {
       setCityFilter(cityInput.trim());
       setPage(1);
     }, 400);
-
     return () => clearTimeout(timer);
   }, [nameInput, cityInput]);
 
@@ -163,12 +163,16 @@ export default function UsersTemplate() {
     router.push(`${basePath}/${profileId}`);
   };
 
-  const handleBlockUser = (userId: string) => {
-    if (
-      confirm(
+  const handleBlockUser = async (userId: string) => {
+    const confirmed = await confirm({
+      title: "Modifier le statut utilisateur",
+      description:
         "Êtes-vous sûr de vouloir modifier le statut de cet utilisateur ?",
-      )
-    ) {
+      confirmText: "Modifier",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
       blockUserMutation.mutate(userId);
     }
   };
@@ -201,9 +205,64 @@ export default function UsersTemplate() {
     setNameInput(value);
   };
 
-  const allCustomers = customersData?.data?.data ?? [];
-  const allSellers = sellersData?.data?.data ?? [];
-  const blockedUsers = blockedCustomersData?.data?.data ?? [];
+  const handleExportToExcel = () => {
+    try {
+      // Préparer les données pour l'export
+      const dataToExport = filteredData.map((user) => ({
+        ID: user.id,
+        Nom: user.displayName,
+        Email: user.email,
+        Téléphone: user.phone,
+        Ville: user.city,
+        Adresse: user.location,
+        Type: viewMode === "customers" ? "Client" : "Vendeur",
+        Statut: user.isVerified ? "Vérifié" : "Non vérifié",
+        Bloqué: user.isBlocked ? "Oui" : "Non",
+        "Date de création": new Date(user.createdAt).toLocaleDateString(
+          "fr-FR",
+        ),
+      }));
+
+      // Créer un nouveau workbook
+      const wb = XLSX.utils.book_new();
+
+      // Créer une worksheet avec les données
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+
+      // Ajouter la worksheet au workbook
+      const sheetName = viewMode === "customers" ? "Clients" : "Vendeurs";
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+      // Générer le nom du fichier avec la date
+      const date = new Date().toISOString().split("T")[0];
+      const fileName = `${sheetName.toLowerCase()}_${date}.xlsx`;
+
+      // Télécharger le fichier
+      XLSX.writeFile(wb, fileName);
+
+      toastSuccess(`Export Excel réussi : ${fileName}`);
+    } catch (error) {
+      console.error("Erreur lors de l'export Excel:", error);
+      toastErr("Erreur lors de l'export Excel");
+    }
+  };
+
+  const allCustomers =
+    customersData &&
+    typeof customersData === "object" &&
+    "data" in customersData
+      ? (customersData.data ?? [])
+      : [];
+  const allSellers =
+    sellersData && typeof sellersData === "object" && "data" in sellersData
+      ? (sellersData.data ?? [])
+      : [];
+  const blockedUsers =
+    blockedCustomersData &&
+    typeof blockedCustomersData === "object" &&
+    "data" in blockedCustomersData
+      ? (blockedCustomersData.data ?? [])
+      : [];
 
   const mappedCustomers = allCustomers.map(mapCustomerToRow);
   const mappedSellers = allSellers.map(mapSellerToRow);
@@ -232,22 +291,62 @@ export default function UsersTemplate() {
     activeTab === "blocked"
       ? currentData.length
       : viewMode === "customers"
-        ? toNumber(customersData?.data?.totalItems)
-        : toNumber(sellersData?.data?.totalItems);
+        ? toNumber(
+            customersData &&
+              typeof customersData === "object" &&
+              "totalItems" in customersData
+              ? customersData.totalItems
+              : 0,
+          )
+        : toNumber(
+            sellersData &&
+              typeof sellersData === "object" &&
+              "totalItems" in sellersData
+              ? sellersData.totalItems
+              : 0,
+          );
 
   const stats = {
-    totalCustomers: toNumber(customersData?.data?.totalItems),
-    totalSellers: toNumber(sellersData?.data?.totalItems),
+    totalCustomers: toNumber(
+      customersData &&
+        typeof customersData === "object" &&
+        "totalItems" in customersData
+        ? customersData.totalItems
+        : 0,
+    ),
+    totalSellers: toNumber(
+      sellersData &&
+        typeof sellersData === "object" &&
+        "totalItems" in sellersData
+        ? sellersData.totalItems
+        : 0,
+    ),
     verifiedCustomers: mappedCustomers.filter((customer) => customer.isVerified)
       .length,
     verifiedSellers: mappedSellers.filter((seller) => seller.isVerified).length,
     blockedUsers: toNumber(
-      blockedCustomersData?.data?.totalItems,
+      blockedCustomersData &&
+        typeof blockedCustomersData === "object" &&
+        "totalItems" in blockedCustomersData
+        ? blockedCustomersData.totalItems
+        : 0,
       mappedBlockedUsers.length,
     ),
     totalUsers:
-      toNumber(customersData?.data?.totalItems) +
-      toNumber(sellersData?.data?.totalItems),
+      toNumber(
+        customersData &&
+          typeof customersData === "object" &&
+          "totalItems" in customersData
+          ? customersData.totalItems
+          : 0,
+      ) +
+      toNumber(
+        sellersData &&
+          typeof sellersData === "object" &&
+          "totalItems" in sellersData
+          ? sellersData.totalItems
+          : 0,
+      ),
   };
 
   const getCurrentUserType = ():
@@ -284,10 +383,7 @@ export default function UsersTemplate() {
         >
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-vif/10 dark:bg-violet-vif/5">
-              <HugeiconsIcon
-                icon={UserMultiple02Icon}
-                className="h-6 w-6 text-violet-vif"
-              />
+              <Users className="h-6 w-6 text-violet-vif" />
             </div>
             <div>
               <h1 className="text-3xl font-bold">Utilisateurs 👥</h1>
@@ -309,7 +405,7 @@ export default function UsersTemplate() {
               value={stats.totalUsers}
               subtitle="Clients + Vendeurs"
               trend="+12%"
-              icon={UserMultiple02Icon}
+              icon={Users}
               variant="default"
               index={0}
             />
@@ -318,7 +414,7 @@ export default function UsersTemplate() {
               value={stats.totalCustomers}
               subtitle="Comptes clients"
               trend="+8%"
-              icon={UserCheck01Icon}
+              icon={UserCheck}
               variant="success"
               index={1}
             />
@@ -327,7 +423,7 @@ export default function UsersTemplate() {
               value={stats.totalSellers}
               subtitle="Comptes vendeurs"
               trend="+15%"
-              icon={ShoppingBag01Icon}
+              icon={ShoppingBag}
               variant="default"
               index={2}
             />
@@ -335,7 +431,7 @@ export default function UsersTemplate() {
               title="Clients vérifiés"
               value={stats.verifiedCustomers}
               subtitle="Comptes validés"
-              icon={UserCheck01Icon}
+              icon={UserCheck}
               variant="success"
               index={3}
             />
@@ -343,7 +439,7 @@ export default function UsersTemplate() {
               title="Vendeurs vérifiés"
               value={stats.verifiedSellers}
               subtitle="Comptes validés"
-              icon={ShoppingBag01Icon}
+              icon={ShoppingBag}
               variant="success"
               index={4}
             />
@@ -351,7 +447,7 @@ export default function UsersTemplate() {
               title="Utilisateurs bloqués"
               value={stats.blockedUsers}
               subtitle="Comptes suspendus"
-              icon={UserBlock01Icon}
+              icon={UserX}
               variant="danger"
               index={5}
             />
@@ -386,6 +482,15 @@ export default function UsersTemplate() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportToExcel}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export Excel
+                  </Button>
                   <Input
                     placeholder="Nom (API)..."
                     className="w-40"
@@ -408,7 +513,9 @@ export default function UsersTemplate() {
                   <TabsTrigger value="verified">Vérifiés</TabsTrigger>
                   <TabsTrigger value="unverified">Non vérifiés</TabsTrigger>
                   <TabsTrigger value="blocked">
-                    {viewMode === "customers" ? "Clients bloqués" : "Vendeurs bloqués"}
+                    {viewMode === "customers"
+                      ? "Clients bloqués"
+                      : "Vendeurs bloqués"}
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value={activeTab} className="mt-6 space-y-4">
@@ -440,6 +547,7 @@ export default function UsersTemplate() {
           </Card>
         </motion.div>
       </div>
+      <ConfirmDialog />
     </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/molecules/PageHeader";
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PercentIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 
 export default function CommissionsTemplate() {
@@ -19,29 +19,15 @@ export default function CommissionsTemplate() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="@container/main flex flex-1 flex-col gap-4 ">
+      <div className="@container/main flex flex-1 flex-col gap-4">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-3"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <HugeiconsIcon
-              icon={PercentIcon}
-              className="h-5 w-5 text-primary"
-            />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Gestion des commissions</h1>
-            <p className="text-muted-foreground">
-              Gérer les commissions des vendeurs et partenaires
-            </p>
-          </div>
-        </motion.div>
+        <PageHeader
+          icon={PercentIcon}
+          title="Gestion des commissions"
+          description="Gérer les commissions des vendeurs et partenaires"
+          emoji="💰"
+        />
 
-        {/* Commission stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -7,6 +7,7 @@ import { ChartCardHeader } from "@/components/molecules/ChartCardHeader";
 import { toArrayFromPayload } from "@/components/organisms/dashboard-data.utils";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Order } from "@/lib/types/orders.type";
+import { formatPrice } from "@/lib/utils";
 import { fetchOrdersQueryOptions } from "@/services/queries/orders.queries";
 import { useQuery } from "@tanstack/react-query";
 
@@ -45,8 +46,7 @@ export function RecentOrdersSection() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">
-                    {Number(order.totalAmount || 0).toLocaleString("fr-FR")}{" "}
-                    {order.currency || "FCFA"}
+                    {formatPrice(order.totalAmount)}
                   </p>
                   <OrderStatusBadge status={order.statut} className="mt-1" />
                 </div>

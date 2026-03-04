@@ -426,7 +426,7 @@ export function TransactionsDataTable({
               <PaginationItem>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="default"
                   onClick={() => onPageChange(1)}
                   disabled={currentPage === 1}
                   className="rounded-full"
@@ -505,7 +505,7 @@ export function TransactionsDataTable({
               <PaginationItem>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="default"
                   onClick={() => onPageChange(totalPages)}
                   disabled={currentPage === totalPages}
                   className="rounded-full"

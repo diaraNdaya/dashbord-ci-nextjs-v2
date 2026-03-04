@@ -1,8 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { IconType } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 
 interface UserStatsCardProps {
@@ -10,7 +9,7 @@ interface UserStatsCardProps {
   value: string | number;
   subtitle: string;
   trend?: string;
-  icon: IconType;
+  icon: LucideIcon;
   variant?: "default" | "success" | "warning" | "danger";
   index?: number;
 }
@@ -28,7 +27,7 @@ export function UserStatsCard({
   value,
   subtitle,
   trend,
-  icon,
+  icon: Icon,
   variant = "default",
   index = 0,
 }: UserStatsCardProps) {
@@ -44,7 +43,7 @@ export function UserStatsCard({
           <div
             className={`h-8 w-8 rounded-lg flex items-center justify-center ${variantStyles[variant]}`}
           >
-            <HugeiconsIcon icon={icon} className="h-4 w-4" />
+            <Icon className="h-4 w-4" />
           </div>
         </CardHeader>
         <CardContent>

@@ -5,9 +5,11 @@ import type {
   ProductBySellerParams,
   ProductDeleteResponse,
   ProductsApiResponse,
+  UpdateProductCredentials,
 } from "@/lib/types/products.types";
 import { serverRequest } from "@/services/server/axios-server.server";
 import { safeAction } from "@/services/server/safe-action.server";
+import { ApiResponse } from "../api.type";
 import { endpoints } from "../endpoints";
 
 export async function getAllProductsAction(page: number, limit: number) {
@@ -20,7 +22,6 @@ export async function getAllProductsAction(page: number, limit: number) {
     );
   });
 }
-
 export async function getTopProductsAction() {
   return safeAction<ProductsApiResponse>(async () => {
     return serverRequest<ProductsApiResponse>(endpoints.TOPCOUNT.product(), {
@@ -28,7 +29,6 @@ export async function getTopProductsAction() {
     });
   });
 }
-
 export async function getProductBySellerAction(params: ProductBySellerParams) {
   return safeAction<ProductsApiResponse>(async () => {
     const { id, page, limit } = params;
@@ -40,7 +40,6 @@ export async function getProductBySellerAction(params: ProductBySellerParams) {
     );
   });
 }
-
 export async function getOneProductAction(id: string) {
   return safeAction<ProductApiResponse>(async () => {
     return serverRequest<ProductApiResponse>(
@@ -51,13 +50,49 @@ export async function getOneProductAction(id: string) {
     );
   });
 }
-
 export async function deleteProductAction(id: string) {
   return safeAction<ProductDeleteResponse>(async () => {
     return serverRequest<ProductDeleteResponse>(
       endpoints.PRODUCT.deleteOneProduct(id),
       {
         method: "DELETE",
+      },
+    );
+  });
+}
+export async function updateProductAction({
+  id,
+  params,
+}: {
+  id: string;
+  params: UpdateProductCredentials;
+}) {
+  return safeAction<ApiResponse<unknown>>(async () => {
+    return serverRequest<ApiResponse<unknown>>(
+      endpoints.PRODUCT.updateProduct(id),
+      {
+        method: "PUT",
+        body: JSON.stringify(params),
+      },
+    );
+  });
+}
+export async function blockedProductAction(id: string) {
+  return safeAction<ApiResponse<unknown>>(async () => {
+    return serverRequest<ApiResponse<unknown>>(
+      endpoints.PRODUCT.blockedProduct(id),
+      {
+        method: "PUT",
+      },
+    );
+  });
+}
+export async function breakProductAction(id: string) {
+  return safeAction<ApiResponse<unknown>>(async () => {
+    return serverRequest<ApiResponse<unknown>>(
+      endpoints.PRODUCT.breakProduct(id),
+      {
+        method: "PUT",
       },
     );
   });
